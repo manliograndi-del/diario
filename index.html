@@ -145,6 +145,34 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 .b-voce{flex:1;padding:15px 4px;font-size:12px;color:var(--tenue);border-top:2px solid transparent;margin-top:-1px;font-weight:500}
 .b-voce.on{color:var(--inchiostro);border-top-color:var(--inchiostro);font-weight:700}
 
+
+/* quadrante */
+.quadrante{padding:20px 16px 16px}
+.anelli-box{position:relative;display:flex;justify-content:center;align-items:center}
+.anelli{display:block}
+.arco{transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.3,1)}
+.centro{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
+.c-kcal{font-size:42px;font-weight:800;letter-spacing:-.045em;line-height:1;font-variant-numeric:tabular-nums;color:var(--blu)}
+.c-sotto{font-size:11px;color:var(--tenue);margin-top:5px;max-width:120px;line-height:1.3}
+.c-prot{margin-top:11px;font-size:17px;font-weight:700;color:var(--senape);font-variant-numeric:tabular-nums}
+.c-prot span{font-size:11px;font-weight:400;color:var(--tenue)}
+.legenda{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;margin-top:14px}
+.lg{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--tenue)}
+.pt{width:9px;height:9px;border-radius:50%;display:inline-block}
+.pt.blu{background:var(--blu)}
+.pt.sen{background:var(--senape)}
+.pt.tacca{width:2.5px;height:11px;border-radius:1px;background:var(--inchiostro)}
+.due-cifre{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px;padding-top:15px;border-top:1px solid var(--linea)}
+.due-cifre .cifra-m{margin:5px 0 0}
+
+/* striscia settimana */
+.settimana{display:flex;justify-content:space-between;gap:2px;margin-top:14px}
+.sg{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;min-width:0}
+.sg-anello{line-height:0}
+.sg-anello.spento{opacity:.32}
+.sg-l{font-family:var(--mono);font-size:10.5px;color:var(--tenue)}
+.sg.oggi .sg-l{color:var(--inchiostro);font-weight:700}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -218,7 +246,7 @@ var ARCHIVIO = [
 
 /* ---------- costanti e utilità ---------- */
 var K_CFG="diario.config", K_IDX="diario.indice", K_G="diario.g.";
-var OB_DEF={kcal:1500,p:160,c:120,g:45};
+var OB_DEF={kcal:1500,fab:2500,p:160,c:120,g:45};
 var PASTI=["Colazione","Pranzo","Cena","Spuntino"];
 var GG=["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
 var MM=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
@@ -375,27 +403,82 @@ function render(){
   }
 }
 
+function anelli(kcal,prot,dim,spesso,conTacca){
+  var R=(dim/2)-spesso/2-1, r=R-spesso-2, cx=dim/2, cy=dim/2;
+  var CR=2*Math.PI*R, cr=2*Math.PI*r;
+  var qk=Math.min(1,kcal/Math.max(1,S.ob.fab)), qp=Math.min(1,prot/Math.max(1,S.ob.p));
+  var oltre=kcal>S.ob.fab;
+  var s='<svg class="anelli" viewBox="0 0 '+dim+' '+dim+'" width="'+dim+'" height="'+dim+'">';
+  s+='<g transform="rotate(-90 '+cx+' '+cy+')">';
+  s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="#E4E8E1" stroke-width="'+spesso+'"/>';
+  s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#E4E8E1" stroke-width="'+spesso+'"/>';
+  s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+(oltre?"#A3341F":"#1F4A6B")+
+     '" stroke-width="'+spesso+'" stroke-linecap="round" stroke-dasharray="'+CR+
+     '" stroke-dashoffset="'+(CR*(1-qk))+'" class="arco"/>';
+  s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#C08411" stroke-width="'+spesso+
+     '" stroke-linecap="round" stroke-dasharray="'+cr+'" stroke-dashoffset="'+(cr*(1-qp))+'" class="arco"/>';
+  s+='</g>';
+  if(conTacca){
+    var a=(-90+360*(S.ob.kcal/Math.max(1,S.ob.fab)))*Math.PI/180;
+    var x1=cx+(R-spesso/2-2)*Math.cos(a), y1=cy+(R-spesso/2-2)*Math.sin(a);
+    var x2=cx+(R+spesso/2+2)*Math.cos(a), y2=cy+(R+spesso/2+2)*Math.sin(a);
+    s+='<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#141B18" stroke-width="2.5" stroke-linecap="round"/>';
+  }
+  s+='</svg>';
+  return s;
+}
+
+function ultimi7(){
+  var out=[], oggi=oggiISO();
+  for(var k=6;k>=0;k--){
+    var d=new Date(); d.setDate(d.getDate()-k);
+    var iso=d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate());
+    var v=S.indice[iso];
+    if(iso===oggi){ var t=totali(S.voci); v={kcal:t.kcal,p:t.p,n:S.voci.length}; }
+    out.push({iso:iso, lettera:["D","L","M","M","G","V","S"][d.getDay()],
+              kcal:v?v.kcal:0, p:v?v.p:0, vuoto:!v||!v.n});
+  }
+  return out;
+}
+
 function vistaOggi(){
   var t=totali(S.voci), h="";
-  var rest=S.ob.kcal-t.kcal, oltre=t.kcal>S.ob.kcal;
-  var quota=Math.min(1,t.kcal/Math.max(1,S.ob.kcal));
-  var nb=Math.max(1,Math.round(S.ob.p/10)), pieni=t.p/10;
+  var rest=S.ob.kcal-t.kcal, oltreOb=t.kcal>S.ob.kcal;
+  var deficit=S.ob.fab-t.kcal;
 
-  h+='<section class="pannello prot"><div class="p-testa"><span class="etichetta">Proteine</span>'+
-     '<span class="cifra-g">'+num(t.p)+'<span class="unita">/'+S.ob.p+' g</span></span></div><div class="blocchi">';
-  for(var i=0;i<nb;i++){
-    var r=Math.max(0,Math.min(1,pieni-i));
-    h+='<div class="blocco"><i style="height:'+(r*100)+'%"></i></div>';
-  }
-  h+='</div><div class="p-piede">'+
-     (t.p>=S.ob.p?"Obiettivo raggiunto":"Mancano "+num(S.ob.p-t.p)+" g — ogni blocco vale 10 g")+
+  h+='<section class="pannello quadrante">'+
+     '<div class="anelli-box">'+anelli(t.kcal,t.p,208,15,true)+
+     '<div class="centro">'+
+       '<div class="c-kcal">'+num(t.kcal)+'</div>'+
+       '<div class="c-sotto">di '+S.ob.fab+' kcal di fabbisogno</div>'+
+       '<div class="c-prot">'+num(t.p)+' <span>/'+S.ob.p+' g proteine</span></div>'+
+     '</div></div>'+
+     '<div class="legenda">'+
+       '<span class="lg"><i class="pt blu"></i>Calorie</span>'+
+       '<span class="lg"><i class="pt sen"></i>Proteine</span>'+
+       '<span class="lg"><i class="pt tacca"></i>Obiettivo '+S.ob.kcal+'</span>'+
+     '</div>'+
+     '<div class="due-cifre">'+
+       '<div><div class="etichetta">'+(oltreOb?"Oltre l\'obiettivo":"Ancora fino a "+S.ob.kcal)+'</div>'+
+       '<div class="cifra-m'+(oltreOb?" rossa":"")+'">'+(oltreOb?"+"+num(-rest):num(rest))+'<span class="unita"> kcal</span></div></div>'+
+       '<div><div class="etichetta">Deficit di oggi</div>'+
+       '<div class="cifra-m'+(deficit<0?" rossa":"")+'">'+num(deficit)+'<span class="unita"> kcal</span></div></div>'+
      '</div></section>';
 
-  h+='<section class="pannello"><div class="p-testa"><span class="etichetta">Calorie</span>'+
-     '<span class="cifra-g'+(oltre?" rossa":"")+'">'+(oltre?"+"+num(-rest):num(rest))+
-     '<span class="unita">'+(oltre?" kcal oltre":" kcal rimaste")+'</span></span></div>'+
-     '<div class="nastro"><i class="'+(oltre?"oltre":"")+'" style="width:'+(quota*100)+'%"></i></div>'+
-     '<div class="p-piede">'+num(t.kcal)+' di '+S.ob.kcal+' kcal</div></section>';
+  // settimana
+  var s7=ultimi7(), centrati=0, tot7=0, np=0, totP=0;
+  s7.forEach(function(g){ if(!g.vuoto){ tot7+=g.kcal; totP+=g.p; np++; if(g.kcal<=S.ob.kcal) centrati++; } });
+  h+='<section class="pannello"><div class="p-testa"><span class="etichetta">Ultimi 7 giorni</span>'+
+     '<span class="g-kcal">'+centrati+' su '+np+' sotto '+S.ob.kcal+'</span></div><div class="settimana">';
+  s7.forEach(function(g,idx){
+    h+='<div class="sg'+(idx===6?" oggi":"")+'">'+
+       '<div class="sg-anello'+(g.vuoto?" spento":"")+'">'+anelli(g.kcal,g.p,42,4,false)+'</div>'+
+       '<div class="sg-l">'+g.lettera+'</div></div>';
+  });
+  h+='</div><div class="p-piede">'+
+     (np===0?"Nessun giorno registrato ancora."
+      :"Media "+num(tot7/np)+" kcal e "+num(totP/np)+" g di proteine al giorno")+
+     '</div></section>';
 
   h+='<section class="coppia">'+mini("Carboidrati",t.c,S.ob.c)+mini("Grassi",t.g,S.ob.g)+'</section>';
   h+='<button class="b1" data-az="vista" data-v="aggiungi">Aggiungi quello che hai mangiato</button>';
@@ -558,11 +641,11 @@ function vistaStorico(){
 
 function vistaImpostazioni(){
   var h='<section class="pannello"><div class="etichetta">Obiettivi giornalieri</div><div class="griglia">';
-  [["kcal","Calorie"],["p","Proteine (g)"],["c","Carboidrati (g)"],["g","Grassi (g)"]].forEach(function(x){
+  [["kcal","Obiettivo kcal"],["fab","Fabbisogno kcal"],["p","Proteine (g)"],["c","Carboidrati (g)"],["g","Grassi (g)"]].forEach(function(x){
     h+='<div><div class="mini-et">'+x[1]+'</div><input class="campo" data-in="ob-'+x[0]+
        '" type="number" inputmode="numeric" value="'+S.ob[x[0]]+'"></div>';
   });
-  h+='</div><div class="nota">Si salvano appena li modifichi.</div></section>';
+  h+='</div><div class="nota">Si salvano appena li modifichi. Il <strong>fabbisogno</strong> è la scala dell\'anello esterno: l\'arco che resta vuoto è il deficit della giornata. L\'<strong>obiettivo</strong> è la tacca nera.</div></section>';
 
   h+='<section class="pannello"><div class="etichetta">I miei alimenti ('+S.miei.length+')</div>';
   if(S.miei.length===0) h+='<div class="nota">Quello che inserisci a mano o componi come ricetta puoi salvarlo qui, e la volta dopo lo ritrovi cercandolo.</div>';
