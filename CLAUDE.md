@@ -21,8 +21,9 @@ Diario alimentare per telefono. Registra i pasti nel momento in cui li mangia, m
 subito calorie e macronutrienti, archivia ogni giorno senza perdere lo storico.
 Serve a seguire una fase di deficit calorico con controllo delle proteine.
 
-Pubblicato su GitHub Pages: `https://manliograndi-del.github.io/Diario/`
-(la D maiuscola conta).
+Pubblicato su GitHub Pages: `https://manliograndi-del.github.io/diario/`
+(tutto minuscolo: la repository è stata rinominata da `Diario` a `diario` il 2026-08-18,
+il vecchio indirizzo con la D maiuscola non vale più).
 
 ## Vincoli tecnici — non negoziabili senza chiederglielo
 
