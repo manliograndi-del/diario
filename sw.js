@@ -1,7 +1,11 @@
 /* Service worker: tiene l'app disponibile anche senza rete.
    Mette in cache i file uno per uno: se uno manca, gli altri
-   vengono salvati comunque. */
-const CACHE = "palestra-v1";
+   vengono salvati comunque.
+   Il nome della cache porta il prefisso "diario-": sull'origine
+   github.io vive anche l'app Palestra e le due si cancellerebbero
+   la cache a vicenda. Alza il numero di versione a ogni rilascio. */
+const PREFISSO = "diario-";
+const CACHE = PREFISSO + "v1";
 const FILE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -15,7 +19,9 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys()
-      .then((k) => Promise.all(k.filter((x) => x !== CACHE).map((x) => caches.delete(x))))
+      .then((k) => Promise.all(k
+        .filter((x) => x.indexOf(PREFISSO) === 0 && x !== CACHE)
+        .map((x) => caches.delete(x))))
       .then(() => self.clients.claim())
   );
 });
