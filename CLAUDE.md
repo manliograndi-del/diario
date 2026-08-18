@@ -71,6 +71,14 @@ Non ribaltarle senza dirglielo esplicitamente.
 - **Niente stima AI degli alimenti.** C'era nella versione artifact, è stata tolta perché
   richiede una chiave API. Al suo posto c'è "Ricetta", che compone un piatto dagli
   ingredienti e lo salva come alimento riutilizzabile.
+- **Nella striscia dei 7 giorni si tocca un giorno passato** e si apre sotto la scheda
+  completa: totali, confronto con l'obiettivo, voci raggruppate per pasto con l'ora.
+  Oggi non è toccabile di proposito: la sua scheda è già tutta la pagina sotto.
+  Lo stesso blocco (`dettaglioGiorno`) alimenta anche il dettaglio nello Storico:
+  se lo cambi, cambiano tutti e due.
+- **Il salvataggio è ritardato di 500 ms** per non riscrivere a ogni tocco, e viene
+  forzato su `pagehide` e `visibilitychange`. Senza quel recupero, una voce
+  registrata e seguita dalla chiusura immediata dell'app andrebbe persa.
 - L'archivio conta ~125 alimenti italiani con valori per 100 g. Aggiungerne è sicuro.
 
 ## Aspetto

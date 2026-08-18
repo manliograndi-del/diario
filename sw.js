@@ -5,7 +5,7 @@
    github.io vive anche l'app Palestra e le due si cancellerebbero
    la cache a vicenda. Alza il numero di versione a ogni rilascio. */
 const PREFISSO = "diario-";
-const CACHE = PREFISSO + "v1";
+const CACHE = PREFISSO + "v2";
 const FILE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {

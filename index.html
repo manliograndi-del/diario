@@ -178,8 +178,18 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 .sg{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;min-width:0}
 .sg-anello{line-height:0}
 .sg-anello.spento{opacity:.32}
-.sg-l{font-family:var(--mono);font-size:10.5px;color:var(--tenue)}
+.sg-l{font-family:var(--mono);font-size:10.5px;color:var(--tenue);border-bottom:2px solid transparent;padding-bottom:2px}
 .sg.oggi .sg-l{color:var(--inchiostro);font-weight:700}
+button.sg{padding:2px 0}
+.sg.on .sg-l{color:var(--inchiostro);font-weight:700;border-bottom-color:var(--inchiostro)}
+
+/* scheda di un giorno passato */
+.sc-chiudi{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--tenue);border:1px solid var(--linea);border-radius:2px;padding:5px 9px}
+.sc-chiudi:active{background:var(--inchiostro);color:#fff;border-color:var(--inchiostro)}
+.sc-tot{margin-top:0;padding-top:13px}
+.sc-macro{font-family:var(--mono);font-size:11px;color:var(--tenue);margin-top:11px}
+.sc-gruppo{margin-top:12px}
+.sc-vuoto{font-size:13.5px;color:var(--tenue);line-height:1.55;margin-top:11px}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -305,19 +315,33 @@ function totali(v){
 }
 
 var tSalva=null;
+function salvaOra(){
+  clearTimeout(tSalva); tSalva=null;
+  var t=totali(S.voci);
+  var ok=scrivi(K_G+S.data,{voci:S.voci,totali:t});
+  if(S.voci.length===0) delete S.indice[S.data];
+  else S.indice[S.data]={kcal:Math.round(t.kcal),p:Math.round(t.p),c:Math.round(t.c),g:Math.round(t.g),n:S.voci.length};
+  ok=scrivi(K_IDX,S.indice)&&ok;
+  return ok;
+}
 function salva(){
   S.spia="in corso"; aggiornaSpia();
   clearTimeout(tSalva);
   tSalva=setTimeout(function(){
-    var t=totali(S.voci);
-    var ok=scrivi(K_G+S.data,{voci:S.voci,totali:t});
-    if(S.voci.length===0) delete S.indice[S.data];
-    else S.indice[S.data]={kcal:Math.round(t.kcal),p:Math.round(t.p),c:Math.round(t.c),g:Math.round(t.g),n:S.voci.length};
-    ok=scrivi(K_IDX,S.indice)&&ok;
+    var ok=salvaOra();
     S.spia=ok?"fatto":"errore"; aggiornaSpia();
     setTimeout(function(){S.spia="";aggiornaSpia();},1600);
   },500);
 }
+/* Il salvataggio aspetta mezzo secondo per non riscrivere a ogni tocco.
+   Se l'app viene chiusa o mandata in secondo piano prima che scada,
+   quella voce andrebbe persa: il telefono può congelare la pagina senza
+   preavviso. Qui la scriviamo subito. */
+function salvaSeInSospeso(){ if(tSalva) salvaOra(); }
+window.addEventListener("pagehide",salvaSeInSospeso);
+document.addEventListener("visibilitychange",function(){
+  if(document.visibilityState==="hidden") salvaSeInSospeso();
+});
 function aggiornaSpia(){
   var e=document.querySelector(".spia"); if(!e)return;
   e.className="spia"+(S.spia==="errore"?" errore":"");
@@ -474,6 +498,45 @@ function ultimi7(){
   return out;
 }
 
+/* Dettaglio di una giornata: totali e voci raggruppate per pasto.
+   Usato sia nella scheda che si apre dalla striscia dei 7 giorni,
+   sia nello storico, così i due posti mostrano le stesse cose. */
+function dettaglioGiorno(voci){
+  voci=voci||[];
+  if(voci.length===0) return '<div class="sc-vuoto">Nessuna voce registrata in questo giorno.</div>';
+  var t=totali(voci), scarto=S.ob.kcal-t.kcal, h="";
+
+  h+='<div class="due-cifre sc-tot">'+
+     '<div><div class="etichetta">Calorie</div>'+
+     '<div class="cifra-m'+(scarto<0?" rossa":"")+'">'+num(t.kcal)+'<span class="unita"> kcal</span></div></div>'+
+     '<div><div class="etichetta">Proteine</div>'+
+     '<div class="cifra-m">'+num(t.p)+'<span class="unita"> / '+S.ob.p+' g</span></div></div>'+
+     '</div>';
+  h+='<div class="sc-macro">Carboidrati '+num(t.c)+' g \u00b7 Grassi '+num(t.g)+' g \u00b7 '+
+     voci.length+(voci.length===1?" voce":" voci")+'</div>';
+  h+='<div class="p-piede">'+(scarto>=0
+     ?"Sotto l\u2019obiettivo di "+num(scarto)+" kcal"
+     :"Sopra l\u2019obiettivo di "+num(-scarto)+" kcal")+'</div>';
+
+  var restanti=voci.slice(), ordine=PASTI.concat(["Altro"]);
+  ordine.forEach(function(pasto){
+    var l=restanti.filter(function(v){
+      return pasto==="Altro" ? PASTI.indexOf(v.pasto)<0 : v.pasto===pasto;
+    });
+    if(l.length===0) return;
+    var tk=l.reduce(function(a,v){return a+v.kcal;},0);
+    h+='<div class="sc-gruppo"><div class="g-testa"><h3 class="g-titolo">'+pasto+'</h3>'+
+       '<span class="g-kcal">'+num(tk)+' kcal</span></div>';
+    l.forEach(function(v){
+      h+='<div class="voce"><div class="v-corpo"><div class="v-nome">'+esc(v.nome)+'</div>'+
+         '<div class="v-dati">'+(v.ora?esc(v.ora)+' \u00b7 ':"")+num(v.grammi)+' g \u00b7 '+num(v.kcal)+
+         ' kcal \u00b7 P '+num(v.p,1)+' \u00b7 C '+num(v.c,1)+' \u00b7 G '+num(v.g,1)+'</div></div></div>';
+    });
+    h+='</div>';
+  });
+  return h;
+}
+
 function vistaOggi(){
   var t=totali(S.voci), h="";
   var rest=S.ob.kcal-t.kcal, oltreOb=t.kcal>S.ob.kcal;
@@ -508,15 +571,30 @@ function vistaOggi(){
   s7.forEach(function(g){ if(!g.vuoto){ tot7+=g.kcal; totP+=g.p; np++; if(g.kcal<=S.ob.kcal) centrati++; } });
   h+='<section class="pannello"><div class="p-testa"><span class="etichetta">Ultimi 7 giorni</span>'+
      '<span class="g-kcal">'+centrati+' su '+np+' sotto '+S.ob.kcal+'</span></div><div class="settimana">';
+  var apribili=0;
   s7.forEach(function(g,idx){
-    h+='<div class="sg'+(idx===6?" oggi":"")+'">'+
+    // oggi no: la sua scheda è già tutta la pagina qui sotto
+    var apribile=idx!==6&&!g.vuoto;
+    if(apribile) apribili++;
+    var el=apribile?"button":"div";
+    h+='<'+el+' class="sg'+(idx===6?" oggi":"")+(S.aperto===g.iso?" on":"")+'"'+
+       (apribile?' data-az="apri" data-d="'+g.iso+'"':"")+'>'+
        '<div class="sg-anello'+(g.vuoto?" spento":"")+'">'+anelli(g.kcal,g.p,42,4,false)+'</div>'+
-       '<div class="sg-l">'+g.lettera+'</div></div>';
+       '<div class="sg-l">'+g.lettera+'</div></'+el+'>';
   });
   h+='</div><div class="p-piede">'+
      (np===0?"Nessun giorno registrato ancora."
-      :"Media "+num(tot7/np)+" kcal e "+num(totP/np)+" g di proteine al giorno")+
+      :"Media "+num(tot7/np)+" kcal e "+num(totP/np)+" g di proteine al giorno"+
+       (apribili?". Tocca un giorno passato per vedere cosa hai mangiato.":""))+
      '</div></section>';
+
+  var apertoQui=S.aperto&&s7.some(function(g,idx){return idx!==6&&g.iso===S.aperto;});
+  if(apertoQui){
+    h+='<section class="pannello"><div class="p-testa">'+
+       '<span class="etichetta">'+dataEstesa(S.aperto)+'</span>'+
+       '<button class="sc-chiudi" data-az="apri" data-d="'+S.aperto+'">chiudi</button></div>'+
+       dettaglioGiorno(S.apertoVoci)+'</section>';
+  }
 
   h+='<section class="coppia">'+mini("Carboidrati",t.c,S.ob.c)+mini("Grassi",t.g,S.ob.g)+'</section>';
   h+='<button class="b1" data-az="vista" data-v="aggiungi">Aggiungi quello che hai mangiato</button>';
@@ -663,14 +741,10 @@ function vistaStorico(){
   giorni.forEach(function(d){
     var v=S.indice[d];
     h+='<div class="gruppo"><button class="giorno" data-az="apri" data-d="'+d+'"><div>'+
-       '<div class="gg-d">'+dataEstesa(d)+'</div><div class="gg-m">P '+v.p+' · C '+v.c+' · G '+v.g+' · '+v.n+' voci</div></div>'+
+       '<div class="gg-d">'+dataEstesa(d)+'</div><div class="gg-m">P '+v.p+' · C '+v.c+' · G '+v.g+' · '+v.n+(v.n===1?' voce':' voci')+'</div></div>'+
        '<div class="gg-k'+(v.kcal>S.ob.kcal?" rossa":"")+'">'+v.kcal+' kcal</div></button>';
     if(S.aperto===d){
-      h+='<div class="dett">';
-      S.apertoVoci.forEach(function(x){
-        h+='<div class="dett-v"><span>'+esc(x.nome)+' — '+num(x.grammi)+' g</span><span>'+num(x.kcal)+' kcal</span></div>';
-      });
-      h+='</div>';
+      h+='<div class="dett">'+dettaglioGiorno(S.apertoVoci)+'</div>';
     }
     h+='</div>';
   });
@@ -713,7 +787,7 @@ document.getElementById("app").addEventListener("click",function(ev){
   var b=ev.target.closest("[data-az]"); if(!b) return;
   var az=b.getAttribute("data-az"), v=b.getAttribute("data-v");
 
-  if(az==="vista"){ S.vista=v; S.scelto=null; S.focus=null; if(v==="aggiungi"){S.pasto=pastoDaOra();} render(); }
+  if(az==="vista"){ S.vista=v; S.scelto=null; S.focus=null; S.aperto=null; if(v==="aggiungi"){S.pasto=pastoDaOra();} render(); }
   else if(az==="chiudi-msg"){ S.msg=null; render(); }
   else if(az==="togli"){ var id=b.getAttribute("data-id"); S.voci=S.voci.filter(function(x){return x.id!==id;}); salva(); render(); }
   else if(az==="scegli"){ var a=trovaPerId(b.getAttribute("data-id")); if(a){S.scelto=a;S.grammi=a.porz||100;S.focus=null;render();} }
