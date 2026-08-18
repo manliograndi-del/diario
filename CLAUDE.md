@@ -87,6 +87,15 @@ Non ribaltarle senza dirglielo esplicitamente.
 - **Il salvataggio è ritardato di 500 ms** per non riscrivere a ogni tocco, e viene
   forzato su `pagehide` e `visibilitychange`. Senza quel recupero, una voce
   registrata e seguita dalla chiusura immediata dell'app andrebbe persa.
+- **Sincronizzazione fra dispositivi: chiesta il 2026-08-18, rimandata da lui.**
+  Vuole ritrovare il diario ovunque si colleghi. Richiede un server e un accesso con
+  password: fattibile e gratuito a questi volumi, ma la configurazione su un pannello
+  esterno tocca a lui, e quel tipo di navigazione gli costa fatica. Se si riprende il
+  discorso: il telefono resta la fonte di verità, si registra sempre in locale e
+  subito anche senza rete, la sincronia avviene dopo. Non barattare il funzionamento
+  offline per la sincronia.
+- Il travaso fra dispositivi oggi si fa da Impostazioni: si scarica il file di backup
+  e sull'altro dispositivo si usa “Scegli il file di backup”.
 - L'archivio conta ~125 alimenti italiani con valori per 100 g. Aggiungerne è sicuro.
 
 ## Aspetto
@@ -102,9 +111,10 @@ Non aggiungere ombre, sfumature o animazioni decorative.
 
 ## Prima di chiudere una sessione
 
-1. **Alza il numero di versione della cache in `sw.js`** (`diario-v2` → `diario-v3`).
-   Se non lo fai, il telefono continua a servire la versione vecchia dalla cache e
-   Manlio vede la modifica sparire nel nulla. È l'errore che si ripete più spesso.
+1. **Alza il numero di versione della cache in `sw.js`** (`diario-v5` → `diario-v6`).
+   Dal 2026-08-18 il service worker chiede la pagina prima alla rete, quindi una
+   versione nuova arriva con un ricaricamento solo; il numero di cache va alzato
+   lo stesso, governa la copia di riserva usata offline.
 2. Verifica che l'app si apra e che una voce registrata sopravviva a un ricaricamento.
 3. Digli **in italiano e senza gergo** cosa vedrà di diverso, e che deve ricaricare
    due volte perché il service worker si aggiorni.
