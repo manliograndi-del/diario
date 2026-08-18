@@ -49,6 +49,11 @@ anche l'app Palestra, e le due condividono lo stesso `localStorage`. La separazi
 data **solo dal prefisso**. Non usare mai chiavi senza prefisso `diario.`, e non
 rinominare i prefissi esistenti.
 
+Lo stesso vale per le cache del service worker, che sono anch'esse comuni alle due
+app: il nome della cache del Diario comincia per `diario-`, e `sw.js` cancella solo
+le cache che cominciano così. Non fargli mai cancellare tutte le cache dell'origine,
+o il Diario resta senza i file di Palestra e viceversa.
+
 Se cambi la forma dei dati salvati, scrivi codice che legge anche il formato vecchio.
 Non c'è un server da cui recuperare: quei dati esistono solo sul suo telefono.
 
@@ -85,7 +90,7 @@ Non aggiungere ombre, sfumature o animazioni decorative.
 
 ## Prima di chiudere una sessione
 
-1. **Alza il numero di versione della cache in `sw.js`** (`diario-v2` → `diario-v3`).
+1. **Alza il numero di versione della cache in `sw.js`** (`diario-v1` → `diario-v2`).
    Se non lo fai, il telefono continua a servire la versione vecchia dalla cache e
    Manlio vede la modifica sparire nel nulla. È l'errore che si ripete più spesso.
 2. Verifica che l'app si apra e che una voce registrata sopravviva a un ricaricamento.
