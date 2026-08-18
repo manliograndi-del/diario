@@ -5,7 +5,7 @@
    github.io vive anche l'app Palestra e le due si cancellerebbero
    la cache a vicenda. Alza il numero di versione a ogni rilascio. */
 const PREFISSO = "diario-";
-const CACHE = PREFISSO + "v4";
+const CACHE = PREFISSO + "v5";
 const FILE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -26,16 +26,36 @@ self.addEventListener("activate", (e) => {
   );
 });
 
+/* Mette da parte una copia buona della risposta. */
+function conserva(richiesta, risposta) {
+  const copia = risposta.clone();
+  caches.open(CACHE).then((c) => c.put(richiesta, copia)).catch(() => {});
+  return risposta;
+}
+
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+
+  /* La pagina viene chiesta prima alla rete: è tutta l'app, e servirla
+     dalla cache significava mostrare per giorni una versione vecchia,
+     costringendo a ricaricare due volte. Senza rete si ricade sulla
+     copia salvata, quindi l'app funziona lo stesso in aereo. */
+  if (e.request.mode === "navigate" || e.request.destination === "document") {
+    e.respondWith(
+      fetch(e.request)
+        .then((res) => conserva(e.request, res))
+        .catch(() => caches.match(e.request).then((r) => r || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  /* Icone e manifest cambiano quasi mai: prima la cache, è più veloce. */
   e.respondWith(
     caches.match(e.request).then((r) => {
       if (r) return r;
-      return fetch(e.request).then((res) => {
-        const copia = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, copia)).catch(() => {});
-        return res;
-      }).catch(() => caches.match("./index.html"));
+      return fetch(e.request)
+        .then((res) => conserva(e.request, res))
+        .catch(() => caches.match("./index.html"));
     })
   );
 });

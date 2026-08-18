@@ -75,9 +75,13 @@ Non ribaltarle senza dirglielo esplicitamente.
 - **Niente stima AI degli alimenti.** C'era nella versione artifact, è stata tolta perché
   richiede una chiave API. Al suo posto c'è "Ricetta", che compone un piatto dagli
   ingredienti e lo salva come alimento riutilizzabile.
-- **Nella striscia dei 7 giorni si tocca un giorno passato** e si apre sotto la scheda
-  completa: totali, confronto con l'obiettivo, voci raggruppate per pasto con l'ora.
-  Oggi non è toccabile di proposito: la sua scheda è già tutta la pagina sotto.
+- **Nella striscia dei 7 giorni si tocca un giorno** e si apre sotto la scheda
+  completa: totali, confronto con l'obiettivo, voci raggruppate per pasto con l'ora,
+  in ordine di orario.
+  **Tutti e sette i cerchi rispondono**, oggi compreso e anche i giorni senza voci
+  (che dicono di essere vuoti). Le prime versioni lasciavano inerti oggi e i giorni
+  vuoti perché non avevano niente da aggiungere: Manlio ha toccato cinque cerchi
+  morti e ha concluso che l'app era rotta. Non reintrodurre eccezioni qui.
   Lo stesso blocco (`dettaglioGiorno`) alimenta anche il dettaglio nello Storico:
   se lo cambi, cambiano tutti e due.
 - **Il salvataggio è ritardato di 500 ms** per non riscrivere a ogni tocco, e viene

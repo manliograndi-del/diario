@@ -589,31 +589,29 @@ function vistaOggi(){
   s7.forEach(function(g){ if(!g.vuoto){ tot7+=g.kcal; totP+=g.p; np++; if(g.kcal<=S.ob.kcal) centrati++; } });
   h+='<section class="pannello"><div class="p-testa"><span class="etichetta">Ultimi 7 giorni</span>'+
      '<span class="g-kcal">'+centrati+' su '+np+' sotto '+S.ob.kcal+'</span></div><div class="settimana">';
-  var apribili=0;
+  /* Ogni cerchio della striscia si apre, senza eccezioni: oggi compreso e
+     anche i giorni senza voci. Le eccezioni sembrano guasti: chi tocca un
+     cerchio che non risponde pensa che l'app sia rotta, non che sia vuota. */
   s7.forEach(function(g,idx){
-    // oggi no: la sua scheda è già tutta la pagina qui sotto.
-    // I giorni vuoti restano toccabili apposta: se non rispondessero
-    // sembrerebbero rotti invece che vuoti.
-    var apribile=idx!==6;
-    if(apribile&&!g.vuoto) apribili++;
-    var el=apribile?"button":"div";
-    h+='<'+el+' class="sg'+(idx===6?" oggi":"")+(S.aperto===g.iso?" on":"")+'"'+
-       (apribile?' data-az="apri" data-d="'+g.iso+'"':"")+'>'+
+    h+='<button class="sg'+(idx===6?" oggi":"")+(S.aperto===g.iso?" on":"")+'"'+
+       ' data-az="apri" data-d="'+g.iso+'">'+
        '<div class="sg-anello'+(g.vuoto?" spento":"")+'">'+anelli(g.kcal,g.p,42,4,false)+'</div>'+
-       '<div class="sg-l">'+g.lettera+'</div></'+el+'>';
+       '<div class="sg-l">'+g.lettera+'</div></button>';
   });
   h+='</div><div class="p-piede">'+
      (np===0?"Nessun giorno registrato ancora."
-      :"Media "+num(tot7/np)+" kcal e "+num(totP/np)+" g di proteine al giorno."+
-       " Tocca un giorno passato per aprirne la scheda.")+
+      :"Media "+num(tot7/np)+" kcal e "+num(totP/np)+" g di proteine al giorno.")+
+     ' Tocca un giorno per aprirne la scheda.'+
      '</div></section>';
 
-  var apertoQui=S.aperto&&s7.some(function(g,idx){return idx!==6&&g.iso===S.aperto;});
+  var apertoQui=S.aperto&&s7.some(function(g){return g.iso===S.aperto;});
   if(apertoQui){
+    // per oggi le voci vive, non quelle appena scritte in memoria
+    var vociAperte=S.aperto===S.data?S.voci:S.apertoVoci;
     h+='<section class="pannello"><div class="p-testa">'+
-       '<span class="etichetta">'+dataEstesa(S.aperto)+'</span>'+
+       '<span class="etichetta">'+dataEstesa(S.aperto)+(S.aperto===S.data?" · oggi":"")+'</span>'+
        '<button class="sc-chiudi" data-az="apri" data-d="'+S.aperto+'">chiudi</button></div>'+
-       dettaglioGiorno(S.apertoVoci)+'</section>';
+       dettaglioGiorno(vociAperte)+'</section>';
   }
 
   h+='<section class="coppia">'+mini("Carboidrati",t.c,S.ob.c)+mini("Grassi",t.g,S.ob.g)+'</section>';
