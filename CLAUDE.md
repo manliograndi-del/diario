@@ -99,4 +99,3 @@ Non aggiungere ombre, sfumature o animazioni decorative.
 - `sw.js` — funzionamento offline; il numero di cache va alzato a ogni rilascio
 - `manifest.webmanifest` — installazione sulla schermata Home
 - `icon-192.png`, `icon-512.png` — icone
-- `diario-alimentare.jsx` — residuo della vecchia versione artifact, non usato a runtime
