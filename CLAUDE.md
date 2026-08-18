@@ -14,6 +14,10 @@ Conseguenze operative:
 - Prima di modifiche che toccano i dati salvati, digli di scaricare il backup da
   Impostazioni.
 - Scrivi in italiano.
+- **Pubblica da solo su `main` senza richiedere il permesso ogni volta** (autorizzato
+  il 2026-08-18). Il ramo di lavoro non gli serve a niente: lui vede solo il sito
+  pubblicato. Restano validi gli obblighi di sempre: provare prima di pubblicare,
+  alzare la versione della cache, e dirgli in italiano cosa cambia per lui.
 
 ## Cos'è
 
