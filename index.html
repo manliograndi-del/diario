@@ -809,7 +809,7 @@ function vistaImpostazioni(){
   h+='</section>';
 
   h+='<section class="pannello"><div class="etichetta">Copia di sicurezza</div>'+
-     '<div class="nota">'+Object.keys(S.indice).length+' giorni registrati. I dati stanno solo su questo telefono: se cancelli i dati del browser, spariscono. Scarica un file ogni tanto.</div>'+
+     '<div class="nota">'+Object.keys(S.indice).length+' giorni registrati. I dati stanno solo su questo dispositivo: se cancelli i dati del browser, spariscono. Scarica un file ogni tanto.</div>'+
      '<button class="b1" data-az="scarica">Scarica il file di backup</button>'+
      '<button class="b2" data-az="esporta">Mostra il testo da copiare</button>';
   if(S.export) h+='<textarea class="campo export" rows="7" readonly>'+esc(S.export)+'</textarea>';
@@ -821,7 +821,7 @@ function vistaImpostazioni(){
      '<button class="b2" data-az="importa">Ripristina da questo testo</button></section>';
 
   h+='<section class="pannello"><div class="etichetta">Come funziona</div>'+
-     '<div class="nota">Ogni voce viene scritta subito nella memoria del telefono, sotto la data del giorno. A mezzanotte l\'app apre da sola il giorno nuovo e archivia il precedente. Non c\'è nulla da salvare a mano e nulla da confermare.</div></section>';
+     '<div class="nota">Ogni voce viene scritta subito nella memoria di questo dispositivo, sotto la data del giorno. A mezzanotte l\'app apre da sola il giorno nuovo e archivia il precedente. Non c\'è nulla da salvare a mano e nulla da confermare.</div></section>';
   return h;
 }
 
