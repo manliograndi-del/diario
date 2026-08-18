@@ -153,19 +153,18 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 .quadrante{padding:20px 16px 16px}
 .quad-riga{display:flex;align-items:center;justify-content:center;gap:16px}
 .anelli-box{position:relative;display:flex;justify-content:center;align-items:center;flex-shrink:0}
-.colonna{display:flex;flex-direction:column;align-items:center;gap:7px;flex-shrink:0}
-.col-track{width:48px;border:1px solid var(--linea);border-radius:3px;background:#EDEFEA;position:relative;overflow:hidden}
-.col-fill{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;transition:height .5s cubic-bezier(.2,.7,.3,1),background .5s}
-.col-txt{writing-mode:vertical-rl;transform:rotate(180deg);font-size:16px;font-weight:800;color:#141B18;letter-spacing:-.02em;white-space:nowrap;font-variant-numeric:tabular-nums}
-.col-fuori{position:absolute;left:0;right:0;margin:0 auto;display:flex;justify-content:center}
-.col-tacca{position:absolute;left:0;right:0;border-top:1px dashed var(--inchiostro);opacity:.5;z-index:2}
+.grasso{display:flex;flex-direction:column;align-items:center;gap:9px;flex:0 1 118px;min-width:74px}
+.grasso-svg{width:100%;height:auto;display:block}
+.grasso-c{transition:r .5s cubic-bezier(.2,.7,.3,1),fill .5s}
+.grasso-n{font-size:27px;font-weight:800;letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums}
+.quad-testa{margin-bottom:15px}
 .col-cap{font-family:var(--mono);font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--tenue);text-align:center;line-height:1.35}
 .anelli{display:block}
 .arco{transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.3,1)}
 .centro{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
 .c-kcal{font-size:36px;font-weight:800;letter-spacing:-.045em;line-height:1;font-variant-numeric:tabular-nums;color:var(--blu)}
 .c-sotto{font-size:10px;color:var(--tenue);margin-top:4px;max-width:104px;line-height:1.3}
-.c-prot{margin-top:9px;font-size:15px;font-weight:700;color:var(--senape);font-variant-numeric:tabular-nums}
+.c-prot{margin-top:9px;font-size:15px;font-weight:700;color:var(--senape);font-variant-numeric:tabular-nums;max-width:112px;white-space:nowrap}
 .c-prot span{font-size:11px;font-weight:400;color:var(--tenue)}
 .legenda{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;margin-top:14px}
 .lg{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--tenue)}
@@ -407,11 +406,14 @@ function ricTotali(){
 /* ---------- render ---------- */
 function render(){
   var h="";
-  var oggi=S.data===oggiISO();
+  /* Con un giorno aperto dalla striscia, il titolo segue quel giorno:
+     tutta la schermata parla di lui, non può dire "Oggi". */
+  var mostrato=(S.vista==="oggi"&&S.aperto)?S.aperto:S.data;
+  var oggi=mostrato===oggiISO();
   h+='<header class="testata"><div class="testata-riga"><div>'+
      '<div class="occhiello">Diario</div>'+
-     '<h1 class="data-titolo">'+(oggi?"Oggi":dataEstesa(S.data))+'</h1>'+
-     '<div class="data-sotto">'+dataEstesa(S.data)+'</div></div>'+
+     '<h1 class="data-titolo">'+(oggi?"Oggi":dataEstesa(mostrato))+'</h1>'+
+     (oggi?'<div class="data-sotto">'+dataEstesa(mostrato)+'</div>':"")+'</div>'+
      '<div class="spia"></div></div></header>';
 
   if(S.msg) h+='<div class="avviso" data-az="chiudi-msg">'+esc(S.msg)+' <span class="avviso-x">chiudi</span></div>';
@@ -474,19 +476,23 @@ function coloreGrassi(gr){
   else { var u=Math.min(1,r-1); c=[lerp(V[0],R[0],u),lerp(V[1],R[1],u),lerp(V[2],R[2],u)]; }
   return "rgb("+c[0]+","+c[1]+","+c[2]+")";
 }
-function colonnaGrassi(kcal,altezza){
+/* Il grasso stimato è un cerchio che si sgonfia: al massimo quando non hai
+   mangiato niente e hai risparmiato tutto il fabbisogno, sempre più piccolo
+   man mano che mangi. Il tratteggio segna l'obiettivo, così si vede a colpo
+   d'occhio se il pieno lo supera o no. */
+function cerchioGrassi(kcal){
   var gr=grammiPersi(kcal), gmax=grammiMax(), gtar=grammiTarget();
-  var q=Math.min(1,gr/gmax), hpx=q*(altezza-2), dentro=hpx>=58;
-  var etichetta=num(gr)+" g";
-  var s='<div class="colonna"><div class="col-track" style="height:'+altezza+'px">';
-  s+='<div class="col-tacca" style="bottom:'+((gtar/gmax)*(altezza-2))+'px"></div>';
-  s+='<div class="col-fill" style="height:'+hpx+'px;background:'+coloreGrassi(gr)+'">';
-  if(dentro) s+='<span class="col-txt">'+etichetta+'</span>';
-  s+='</div>';
-  if(!dentro) s+='<span class="col-txt col-fuori" style="bottom:'+(hpx+8)+'px">'+etichetta+'</span>';
-  s+='</div><div class="col-cap">grasso<br>stimato</div></div>';
-  return s;
+  var D=118, c=D/2, Rmax=c-1;
+  var r=Rmax*Math.min(1,gr/gmax), rt=Rmax*Math.min(1,gtar/gmax);
+  var v='<div class="grasso"><svg class="grasso-svg" viewBox="0 0 '+D+' '+D+'" aria-hidden="true">';
+  v+='<circle cx="'+c+'" cy="'+c+'" r="'+Rmax+'" fill="#EDEFEA" stroke="'+"#CDD3CB"+'" stroke-width="1"/>';
+  if(r>0.6) v+='<circle cx="'+c+'" cy="'+c+'" r="'+r.toFixed(1)+'" fill="'+coloreGrassi(gr)+'" class="grasso-c"/>';
+  v+='<circle cx="'+c+'" cy="'+c+'" r="'+rt.toFixed(1)+'" fill="none" stroke="#141B18" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>';
+  v+='</svg><div class="grasso-n">'+num(gr)+'</div>'+
+     '<div class="col-cap">grasso stimato</div></div>';
+  return v;
 }
+
 
 function ultimi7(){
   var out=[], oggi=oggiISO();
@@ -504,22 +510,24 @@ function ultimi7(){
 /* Dettaglio di una giornata: totali e voci raggruppate per pasto.
    Usato sia nella scheda che si apre dalla striscia dei 7 giorni,
    sia nello storico, così i due posti mostrano le stesse cose. */
-function dettaglioGiorno(voci){
+function dettaglioGiorno(voci,conRiepilogo){
   voci=voci||[];
   if(voci.length===0) return '<div class="sc-vuoto">Nessuna voce registrata in questo giorno.</div>';
   var t=totali(voci), scarto=S.ob.kcal-t.kcal, h="";
 
-  h+='<div class="due-cifre sc-tot">'+
-     '<div><div class="etichetta">Calorie</div>'+
-     '<div class="cifra-m'+(scarto<0?" rossa":"")+'">'+num(t.kcal)+'<span class="unita"> kcal</span></div></div>'+
-     '<div><div class="etichetta">Proteine</div>'+
-     '<div class="cifra-m">'+num(t.p)+'<span class="unita"> / '+S.ob.p+' g</span></div></div>'+
-     '</div>';
-  h+='<div class="sc-macro">Carboidrati '+num(t.c)+' g \u00b7 Grassi '+num(t.g)+' g \u00b7 '+
-     voci.length+(voci.length===1?" voce":" voci")+'</div>';
-  h+='<div class="p-piede">'+(scarto>=0
-     ?"Sotto l\u2019obiettivo di "+num(scarto)+" kcal"
-     :"Sopra l\u2019obiettivo di "+num(-scarto)+" kcal")+'</div>';
+  if(conRiepilogo){
+    h+='<div class="due-cifre sc-tot">'+
+       '<div><div class="etichetta">Calorie</div>'+
+       '<div class="cifra-m'+(scarto<0?" rossa":"")+'">'+num(t.kcal)+'<span class="unita"> kcal</span></div></div>'+
+       '<div><div class="etichetta">Proteine</div>'+
+       '<div class="cifra-m">'+num(t.p)+'<span class="unita"> / '+S.ob.p+' g</span></div></div>'+
+       '</div>';
+    h+='<div class="sc-macro">Carboidrati '+num(t.c)+' g \u00b7 Grassi '+num(t.g)+' g \u00b7 '+
+       voci.length+(voci.length===1?" voce":" voci")+'</div>';
+    h+='<div class="p-piede">'+(scarto>=0
+       ?"Sotto l\u2019obiettivo di "+num(scarto)+" kcal"
+       :"Sopra l\u2019obiettivo di "+num(-scarto)+" kcal")+'</div>';
+  }
 
   /* I pasti escono in ordine di orario, non nell'ordine fisso Colazione-
      Pranzo-Cena-Spuntino: una giornata passata si rilegge come è andata.
@@ -556,19 +564,31 @@ function dettaglioGiorno(voci){
 }
 
 function vistaOggi(){
-  var t=totali(S.voci), h="";
+  var s7=ultimi7();
+  /* Se un giorno della striscia è aperto, tutta la parte alta parla di quel
+     giorno: anelli, cifre, grasso e macro. Prima i numeri grandi restavano
+     sempre di oggi mentre sotto si leggeva un altro giorno. */
+  var aperto=(S.aperto&&s7.some(function(g){return g.iso===S.aperto;}))?S.aperto:null;
+  var passato=!!(aperto&&aperto!==S.data);
+  var voci=passato?S.apertoVoci:S.voci;
+  var t=totali(voci), h="";
   var rest=S.ob.kcal-t.kcal, oltreOb=t.kcal>S.ob.kcal;
   var deficit=S.ob.fab-t.kcal;
 
-  h+='<section class="pannello quadrante">'+
-     '<div class="quad-riga">'+
+  h+='<section class="pannello quadrante">';
+  if(passato){
+    // la data è già il titolo della pagina: qui basta dire dove sei
+    h+='<div class="p-testa quad-testa"><span class="etichetta">Giorno passato</span>'+
+       '<button class="sc-chiudi" data-az="apri" data-d="'+aperto+'">torna a oggi</button></div>';
+  }
+  h+='<div class="quad-riga">'+
      '<div class="anelli-box">'+anelli(t.kcal,t.p,176,13,true)+
      '<div class="centro">'+
        '<div class="c-kcal">'+num(t.kcal)+'</div>'+
        '<div class="c-sotto">di '+S.ob.fab+' kcal di fabbisogno</div>'+
-       '<div class="c-prot">'+num(t.p)+' <span>/'+S.ob.p+' g proteine</span></div>'+
+       '<div class="c-prot">'+num(t.p)+' <span>/'+S.ob.p+' g</span></div>'+
      '</div></div>'+
-     colonnaGrassi(t.kcal,176)+
+     cerchioGrassi(t.kcal)+
      '</div>'+
      '<div class="legenda">'+
        '<span class="lg"><i class="pt blu"></i>Calorie</span>'+
@@ -576,16 +596,16 @@ function vistaOggi(){
        '<span class="lg"><i class="pt tacca"></i>Obiettivo '+S.ob.kcal+'</span>'+
      '</div>'+
      '<div class="due-cifre">'+
-       '<div><div class="etichetta">'+(oltreOb?"Oltre l\'obiettivo":"Ancora fino a "+S.ob.kcal)+'</div>'+
+       '<div><div class="etichetta">'+(oltreOb?"Oltre l\'obiettivo":(passato?"Sotto l\'obiettivo":"Ancora fino a "+S.ob.kcal))+'</div>'+
        '<div class="cifra-m'+(oltreOb?" rossa":"")+'">'+(oltreOb?"+"+num(-rest):num(rest))+'<span class="unita"> kcal</span></div></div>'+
-       '<div><div class="etichetta">Deficit di oggi</div>'+
+       '<div><div class="etichetta">'+(passato?"Deficit del giorno":"Deficit di oggi")+'</div>'+
        '<div class="cifra-m'+(deficit<0?" rossa":"")+'">'+num(deficit)+'<span class="unita"> kcal</span></div></div>'+
      '</div>'+
-     '<div class="nota">La colonna traduce il deficit in grammi di grasso: 7700 kcal circa un chilo. \u00c8 una stima, non quello che leggerai domani sulla bilancia. Il tratteggio segna i '+num(grammiTarget())+' g del tuo obiettivo: verde pieno l\u00ec, rosso se scendi molto sotto.</div>'+
+     '<div class="nota">Il cerchio traduce il deficit in grammi di grasso: 7700 kcal circa un chilo. \u00c8 una stima, non quello che leggerai domani sulla bilancia. Il tratteggio segna i '+num(grammiTarget())+' g del tuo obiettivo: verde pieno l\u00ec, rosso se scendi molto sotto.</div>'+
      '</section>';
 
   // settimana
-  var s7=ultimi7(), centrati=0, tot7=0, np=0, totP=0;
+  var centrati=0, tot7=0, np=0, totP=0;
   s7.forEach(function(g){ if(!g.vuoto){ tot7+=g.kcal; totP+=g.p; np++; if(g.kcal<=S.ob.kcal) centrati++; } });
   h+='<section class="pannello"><div class="p-testa"><span class="etichetta">Ultimi 7 giorni</span>'+
      '<span class="g-kcal">'+centrati+' su '+np+' sotto '+S.ob.kcal+'</span></div><div class="settimana">';
@@ -593,7 +613,7 @@ function vistaOggi(){
      anche i giorni senza voci. Le eccezioni sembrano guasti: chi tocca un
      cerchio che non risponde pensa che l'app sia rotta, non che sia vuota. */
   s7.forEach(function(g,idx){
-    h+='<button class="sg'+(idx===6?" oggi":"")+(S.aperto===g.iso?" on":"")+'"'+
+    h+='<button class="sg'+(idx===6?" oggi":"")+(aperto===g.iso?" on":"")+'"'+
        ' data-az="apri" data-d="'+g.iso+'">'+
        '<div class="sg-anello'+(g.vuoto?" spento":"")+'">'+anelli(g.kcal,g.p,42,4,false)+'</div>'+
        '<div class="sg-l">'+g.lettera+'</div></button>';
@@ -604,17 +624,19 @@ function vistaOggi(){
      ' Tocca un giorno per aprirne la scheda.'+
      '</div></section>';
 
-  var apertoQui=S.aperto&&s7.some(function(g){return g.iso===S.aperto;});
-  if(apertoQui){
-    // per oggi le voci vive, non quelle appena scritte in memoria
-    var vociAperte=S.aperto===S.data?S.voci:S.apertoVoci;
+  if(aperto){
+    // per un giorno passato l'intestazione sta già sul quadrante qui sopra
     h+='<section class="pannello"><div class="p-testa">'+
-       '<span class="etichetta">'+dataEstesa(S.aperto)+(S.aperto===S.data?" · oggi":"")+'</span>'+
-       '<button class="sc-chiudi" data-az="apri" data-d="'+S.aperto+'">chiudi</button></div>'+
-       dettaglioGiorno(vociAperte)+'</section>';
+       '<span class="etichetta">Cosa hai mangiato</span>'+
+       (passato?"":'<button class="sc-chiudi" data-az="apri" data-d="'+aperto+'">chiudi</button>')+
+       '</div>'+dettaglioGiorno(voci,false)+'</section>';
   }
 
   h+='<section class="coppia">'+mini("Carboidrati",t.c,S.ob.c)+mini("Grassi",t.g,S.ob.g)+'</section>';
+
+  // un giorno passato non si modifica: niente pulsante e niente elenco con "togli"
+  if(passato) return h;
+
   h+='<button class="b1" data-az="vista" data-v="aggiungi">Aggiungi quello che hai mangiato</button>';
 
   var gruppi=PASTI.map(function(p){return {p:p,l:S.voci.filter(function(v){return v.pasto===p;})};})
@@ -628,8 +650,8 @@ function vistaOggi(){
          '<span class="g-kcal">'+num(tk)+' kcal</span></div>';
       x.l.forEach(function(v){
         h+='<div class="voce"><div class="v-corpo"><div class="v-nome">'+esc(v.nome)+'</div>'+
-           '<div class="v-dati">'+num(v.grammi)+' g · '+num(v.kcal)+' kcal · P '+num(v.p,1)+
-           ' · C '+num(v.c,1)+' · G '+num(v.g,1)+'</div></div>'+
+           '<div class="v-dati">'+num(v.grammi)+' g \u00b7 '+num(v.kcal)+' kcal \u00b7 P '+num(v.p,1)+
+           ' \u00b7 C '+num(v.c,1)+' \u00b7 G '+num(v.g,1)+'</div></div>'+
            '<button class="v-togli" data-az="togli" data-id="'+v.id+'">togli</button></div>';
       });
       h+='</section>';
@@ -762,7 +784,7 @@ function vistaStorico(){
        '<div class="gg-d">'+dataEstesa(d)+'</div><div class="gg-m">P '+v.p+' · C '+v.c+' · G '+v.g+' · '+v.n+(v.n===1?' voce':' voci')+'</div></div>'+
        '<div class="gg-k'+(v.kcal>S.ob.kcal?" rossa":"")+'">'+v.kcal+' kcal</div></button>';
     if(S.aperto===d){
-      h+='<div class="dett">'+dettaglioGiorno(S.apertoVoci)+'</div>';
+      h+='<div class="dett">'+dettaglioGiorno(S.apertoVoci,true)+'</div>';
     }
     h+='</div>';
   });

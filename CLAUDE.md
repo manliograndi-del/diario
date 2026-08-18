@@ -64,9 +64,14 @@ Non ribaltarle senza dirglielo esplicitamente.
 - **L'anello esterno è tarato sul fabbisogno (2500 kcal), non sull'obiettivo (1500).**
   Così l'arco vuoto rappresenta il deficit. La tacca nera segna l'obiettivo.
 - **L'anello interno sono le proteine** su 160 g.
-- **La colonna dei grammi di grasso** usa 7700 kcal ≈ 1 kg. Il colore è ancorato
-  all'obiettivo: ambra a 0 g, **verde pieno a 130 g** (il suo target), poi virata al
-  rosso, rosso pieno a 260 g.
+- **Il cerchio dei grammi di grasso** usa 7700 kcal ≈ 1 kg. Era una colonna verticale
+  fino al 2026-08-18: lui ha chiesto un cerchio, e il cerchio è più leggibile.
+  Il **diametro** è proporzionale ai grammi risparmiati sul massimo teorico (il
+  fabbisogno intero, ~325 g): pieno quando non hai mangiato niente, si sgonfia man
+  mano che mangi. Il cerchio tratteggiato segna i ~130 g dell'obiettivo. La cifra è
+  orizzontale, grande e **senza `g`** — l'ha chiesto così.
+  Il colore è ancorato all'obiettivo: ambra a 0 g, **verde pieno a 130 g** (il suo
+  target), poi virata al rosso, rosso pieno a 260 g.
   Il gradiente **non è monotòno di proposito**: un gradiente che diventa sempre più
   verde man mano che mangi meno premierebbe il non mangiare. Se chiede di renderlo
   monotòno, fallo, ma ricordagli perché era così.
@@ -75,6 +80,11 @@ Non ribaltarle senza dirglielo esplicitamente.
 - **Niente stima AI degli alimenti.** C'era nella versione artifact, è stata tolta perché
   richiede una chiave API. Al suo posto c'è "Ricetta", che compone un piatto dagli
   ingredienti e lo salva come alimento riutilizzabile.
+- **Il quadrante grande segue il giorno aperto nella striscia.** Anelli, cifre,
+  grasso e macro parlano di quel giorno, e anche il titolo della pagina; per un
+  giorno passato spariscono il pulsante “Aggiungi” e l'elenco con i “togli”,
+  perché non si modifica. Prima i numeri grandi restavano di oggi mentre sotto si
+  leggeva un altro giorno, e non si capiva a cosa si riferissero.
 - **Nella striscia dei 7 giorni si tocca un giorno** e si apre sotto la scheda
   completa: totali, confronto con l'obiettivo, voci raggruppate per pasto con l'ora,
   in ordine di orario.
