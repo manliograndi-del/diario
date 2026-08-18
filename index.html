@@ -518,12 +518,27 @@ function dettaglioGiorno(voci){
      ?"Sotto l\u2019obiettivo di "+num(scarto)+" kcal"
      :"Sopra l\u2019obiettivo di "+num(-scarto)+" kcal")+'</div>';
 
-  var restanti=voci.slice(), ordine=PASTI.concat(["Altro"]);
-  ordine.forEach(function(pasto){
-    var l=restanti.filter(function(v){
+  /* I pasti escono in ordine di orario, non nell'ordine fisso Colazione-
+     Pranzo-Cena-Spuntino: una giornata passata si rilegge come è andata.
+     Le voci senza ora (diari vecchi) finiscono in fondo, nell'ordine solito. */
+  var ordine=PASTI.concat(["Altro"]), gruppi=[];
+  ordine.forEach(function(pasto,i){
+    var l=voci.filter(function(v){
       return pasto==="Altro" ? PASTI.indexOf(v.pasto)<0 : v.pasto===pasto;
     });
     if(l.length===0) return;
+    var ore=l.map(function(v){return v.ora||"";}).filter(function(o){return o;}).sort();
+    gruppi.push({pasto:pasto, voci:l, ora:ore.length?ore[0]:null, i:i});
+  });
+  gruppi.sort(function(a,b){
+    if(a.ora&&b.ora) return a.ora<b.ora?-1:a.ora>b.ora?1:a.i-b.i;
+    if(a.ora) return -1;
+    if(b.ora) return 1;
+    return a.i-b.i;
+  });
+  gruppi.forEach(function(gr){
+    var pasto=gr.pasto;
+    var l=gr.voci.slice().sort(function(x,y){return (x.ora||"")<(y.ora||"")?-1:(x.ora||"")>(y.ora||"")?1:0;});
     var tk=l.reduce(function(a,v){return a+v.kcal;},0);
     h+='<div class="sc-gruppo"><div class="g-testa"><h3 class="g-titolo">'+pasto+'</h3>'+
        '<span class="g-kcal">'+num(tk)+' kcal</span></div>';
@@ -573,9 +588,11 @@ function vistaOggi(){
      '<span class="g-kcal">'+centrati+' su '+np+' sotto '+S.ob.kcal+'</span></div><div class="settimana">';
   var apribili=0;
   s7.forEach(function(g,idx){
-    // oggi no: la sua scheda è già tutta la pagina qui sotto
-    var apribile=idx!==6&&!g.vuoto;
-    if(apribile) apribili++;
+    // oggi no: la sua scheda è già tutta la pagina qui sotto.
+    // I giorni vuoti restano toccabili apposta: se non rispondessero
+    // sembrerebbero rotti invece che vuoti.
+    var apribile=idx!==6;
+    if(apribile&&!g.vuoto) apribili++;
     var el=apribile?"button":"div";
     h+='<'+el+' class="sg'+(idx===6?" oggi":"")+(S.aperto===g.iso?" on":"")+'"'+
        (apribile?' data-az="apri" data-d="'+g.iso+'"':"")+'>'+
@@ -584,8 +601,8 @@ function vistaOggi(){
   });
   h+='</div><div class="p-piede">'+
      (np===0?"Nessun giorno registrato ancora."
-      :"Media "+num(tot7/np)+" kcal e "+num(totP/np)+" g di proteine al giorno"+
-       (apribili?". Tocca un giorno passato per vedere cosa hai mangiato.":""))+
+      :"Media "+num(tot7/np)+" kcal e "+num(totP/np)+" g di proteine al giorno."+
+       " Tocca un giorno passato per aprirne la scheda.")+
      '</div></section>';
 
   var apertoQui=S.aperto&&s7.some(function(g,idx){return idx!==6&&g.iso===S.aperto;});
