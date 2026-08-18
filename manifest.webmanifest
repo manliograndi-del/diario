@@ -1,6 +1,6 @@
 {
-  "name": "Diario alimentare",
-  "short_name": "Diario",
+  "name": "Palestra — scheda allenamento",
+  "short_name": "Palestra",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

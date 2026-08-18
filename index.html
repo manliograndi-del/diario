@@ -148,13 +148,21 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 
 /* quadrante */
 .quadrante{padding:20px 16px 16px}
-.anelli-box{position:relative;display:flex;justify-content:center;align-items:center}
+.quad-riga{display:flex;align-items:center;justify-content:center;gap:16px}
+.anelli-box{position:relative;display:flex;justify-content:center;align-items:center;flex-shrink:0}
+.colonna{display:flex;flex-direction:column;align-items:center;gap:7px;flex-shrink:0}
+.col-track{width:48px;border:1px solid var(--linea);border-radius:3px;background:#EDEFEA;position:relative;overflow:hidden}
+.col-fill{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;transition:height .5s cubic-bezier(.2,.7,.3,1),background .5s}
+.col-txt{writing-mode:vertical-rl;transform:rotate(180deg);font-size:16px;font-weight:800;color:#141B18;letter-spacing:-.02em;white-space:nowrap;font-variant-numeric:tabular-nums}
+.col-fuori{position:absolute;left:0;right:0;margin:0 auto;display:flex;justify-content:center}
+.col-tacca{position:absolute;left:0;right:0;border-top:1px dashed var(--inchiostro);opacity:.5;z-index:2}
+.col-cap{font-family:var(--mono);font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--tenue);text-align:center;line-height:1.35}
 .anelli{display:block}
 .arco{transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.3,1)}
 .centro{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
-.c-kcal{font-size:42px;font-weight:800;letter-spacing:-.045em;line-height:1;font-variant-numeric:tabular-nums;color:var(--blu)}
-.c-sotto{font-size:11px;color:var(--tenue);margin-top:5px;max-width:120px;line-height:1.3}
-.c-prot{margin-top:11px;font-size:17px;font-weight:700;color:var(--senape);font-variant-numeric:tabular-nums}
+.c-kcal{font-size:36px;font-weight:800;letter-spacing:-.045em;line-height:1;font-variant-numeric:tabular-nums;color:var(--blu)}
+.c-sotto{font-size:10px;color:var(--tenue);margin-top:4px;max-width:104px;line-height:1.3}
+.c-prot{margin-top:9px;font-size:15px;font-weight:700;color:var(--senape);font-variant-numeric:tabular-nums}
 .c-prot span{font-size:11px;font-weight:400;color:var(--tenue)}
 .legenda{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;margin-top:14px}
 .lg{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--tenue)}
@@ -428,6 +436,31 @@ function anelli(kcal,prot,dim,spesso,conTacca){
   return s;
 }
 
+var KCAL_PER_KG=7700;
+function grammiPersi(kcal){ return Math.max(0,(S.ob.fab-kcal)/KCAL_PER_KG*1000); }
+function grammiMax(){ return S.ob.fab/KCAL_PER_KG*1000; }
+function grammiTarget(){ return Math.max(1,(S.ob.fab-S.ob.kcal)/KCAL_PER_KG*1000); }
+function lerp(a,b,t){ return Math.round(a+(b-a)*t); }
+function coloreGrassi(gr){
+  var A=[192,132,17], V=[46,107,79], R=[163,52,31], r=gr/grammiTarget(), c;
+  if(r<=1){ c=[lerp(A[0],V[0],r),lerp(A[1],V[1],r),lerp(A[2],V[2],r)]; }
+  else { var u=Math.min(1,r-1); c=[lerp(V[0],R[0],u),lerp(V[1],R[1],u),lerp(V[2],R[2],u)]; }
+  return "rgb("+c[0]+","+c[1]+","+c[2]+")";
+}
+function colonnaGrassi(kcal,altezza){
+  var gr=grammiPersi(kcal), gmax=grammiMax(), gtar=grammiTarget();
+  var q=Math.min(1,gr/gmax), hpx=q*(altezza-2), dentro=hpx>=58;
+  var etichetta=num(gr)+" g";
+  var s='<div class="colonna"><div class="col-track" style="height:'+altezza+'px">';
+  s+='<div class="col-tacca" style="bottom:'+((gtar/gmax)*(altezza-2))+'px"></div>';
+  s+='<div class="col-fill" style="height:'+hpx+'px;background:'+coloreGrassi(gr)+'">';
+  if(dentro) s+='<span class="col-txt">'+etichetta+'</span>';
+  s+='</div>';
+  if(!dentro) s+='<span class="col-txt col-fuori" style="bottom:'+(hpx+8)+'px">'+etichetta+'</span>';
+  s+='</div><div class="col-cap">grasso<br>stimato</div></div>';
+  return s;
+}
+
 function ultimi7(){
   var out=[], oggi=oggiISO();
   for(var k=6;k>=0;k--){
@@ -447,12 +480,15 @@ function vistaOggi(){
   var deficit=S.ob.fab-t.kcal;
 
   h+='<section class="pannello quadrante">'+
-     '<div class="anelli-box">'+anelli(t.kcal,t.p,208,15,true)+
+     '<div class="quad-riga">'+
+     '<div class="anelli-box">'+anelli(t.kcal,t.p,176,13,true)+
      '<div class="centro">'+
        '<div class="c-kcal">'+num(t.kcal)+'</div>'+
        '<div class="c-sotto">di '+S.ob.fab+' kcal di fabbisogno</div>'+
        '<div class="c-prot">'+num(t.p)+' <span>/'+S.ob.p+' g proteine</span></div>'+
      '</div></div>'+
+     colonnaGrassi(t.kcal,176)+
+     '</div>'+
      '<div class="legenda">'+
        '<span class="lg"><i class="pt blu"></i>Calorie</span>'+
        '<span class="lg"><i class="pt sen"></i>Proteine</span>'+
@@ -463,7 +499,9 @@ function vistaOggi(){
        '<div class="cifra-m'+(oltreOb?" rossa":"")+'">'+(oltreOb?"+"+num(-rest):num(rest))+'<span class="unita"> kcal</span></div></div>'+
        '<div><div class="etichetta">Deficit di oggi</div>'+
        '<div class="cifra-m'+(deficit<0?" rossa":"")+'">'+num(deficit)+'<span class="unita"> kcal</span></div></div>'+
-     '</div></section>';
+     '</div>'+
+     '<div class="nota">La colonna traduce il deficit in grammi di grasso: 7700 kcal circa un chilo. \u00c8 una stima, non quello che leggerai domani sulla bilancia. Il tratteggio segna i '+num(grammiTarget())+' g del tuo obiettivo: verde pieno l\u00ec, rosso se scendi molto sotto.</div>'+
+     '</section>';
 
   // settimana
   var s7=ultimi7(), centrati=0, tot7=0, np=0, totP=0;

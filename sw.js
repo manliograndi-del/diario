@@ -1,7 +1,7 @@
 /* Service worker: tiene l'app disponibile anche senza rete.
    Mette in cache i file uno per uno: se uno manca, gli altri
    vengono salvati comunque. */
-const CACHE = "diario-v2";
+const CACHE = "palestra-v1";
 const FILE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
