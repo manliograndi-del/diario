@@ -106,6 +106,16 @@ Non ribaltarle senza dirglielo esplicitamente.
   offline per la sincronia.
 - Il travaso fra dispositivi oggi si fa da Impostazioni: si scarica il file di backup
   e sull'altro dispositivo si usa “Scegli il file di backup”.
+- **Tema scuro automatico dalle 20 alle 7** (chiesto il 2026-08-18), con Automatico /
+  Chiaro / Scuro in Impostazioni. **Non** segue `prefers-color-scheme`: chi tiene il
+  telefono sempre su chiaro non vedrebbe mai cambiare niente e penserebbe che sia
+  rotto. L'ora si comporta sempre allo stesso modo.
+  Cambia solo i neutri: blu, senape, verde e rosso restano quello che significano,
+  solo schiariti quanto basta per leggersi sul fondo scuro.
+  Il tema vive in `:root[data-tema="scuro"]`. **Ogni colore va preso da una variabile
+  CSS**, anche dentro gli SVG (`style="stroke:var(--blu)"`, non `stroke="#1F4A6B"`).
+  L'unica eccezione è `coloreGrassi()`, che calcola una sfumatura: ha due terne RGB e
+  legge `temaScuro()`. Se aggiungi un colore fisso, al buio sparisce.
 - L'archivio conta ~125 alimenti italiani con valori per 100 g. Aggiungerne è sicuro.
 
 ## Aspetto
@@ -114,6 +124,9 @@ Palette (variabili CSS in `:root`, usale, non inventare colori):
 `--carta #E9ECE6` · `--superficie #FFF` · `--inchiostro #141B18` · `--tenue #5B6661`
 `--linea #CDD3CB` · `--blu #1F4A6B` (calorie) · `--senape #C08411` (proteine)
 `--rosso #A3341F` · `--verde #2E6B4F`
+Più `--su-inchiostro` (il testo sopra i fondi color inchiostro), `--traccia` (le piste
+vuote di anelli e nastri), `--neutro`, `--linea-prot`. Servono al tema scuro: se scrivi
+un colore fisso invece di una variabile, di notte diventa illeggibile.
 
 Angoli quasi vivi (3px), pannelli bianchi bordati su fondo grigio-verde, numeri
 tabulari e grandi, etichette in maiuscoletto monospaziato. Sobrio, strumentale.
