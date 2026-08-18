@@ -642,7 +642,18 @@ function vistaOggi(){
   var gruppi=PASTI.map(function(p){return {p:p,l:S.voci.filter(function(v){return v.pasto===p;})};})
                   .filter(function(x){return x.l.length>0;});
   if(gruppi.length===0){
-    h+='<div class="vuoto">Nessuna voce per oggi. Registra il primo alimento appena lo mangi: bastano dieci secondi.</div>';
+    /* Diario completamente vuoto: quasi sempre è un dispositivo nuovo su cui
+       si vuole rivedere il proprio diario. Il ripristino sta in fondo alle
+       Impostazioni, dove nessuno lo cerca: lo offriamo qui, dove si guarda. */
+    var maiUsato=Object.keys(S.indice).length===0;
+    h+='<div class="vuoto">'+(maiUsato
+        ?"Qui non c\u2019è ancora niente. Registra il primo alimento appena lo mangi: bastano dieci secondi."
+        :"Nessuna voce per oggi. Registra il primo alimento appena lo mangi: bastano dieci secondi.");
+    if(maiUsato){
+      h+='<label class="b2">Ho un file di backup, caricalo'+
+         '<input class="file-nascosto" type="file" accept=".json,application/json" data-in="file-backup"></label>';
+    }
+    h+='</div>';
   } else {
     gruppi.forEach(function(x){
       var tk=x.l.reduce(function(a,v){return a+v.kcal;},0);
