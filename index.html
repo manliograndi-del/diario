@@ -73,6 +73,9 @@ input,textarea{font-family:inherit}
 .b1:active{transform:scale(.985)}
 .b1:disabled{opacity:.45}
 .b2{width:100%;background:transparent;padding:13px;border:1px solid var(--inchiostro);border-radius:3px;font-size:14px;font-weight:500;margin-top:9px}
+label.b2{display:block;text-align:center;cursor:pointer}
+label.b2:active{background:var(--inchiostro);color:#F2F5F1}
+.file-nascosto{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .indietro{font-size:13.5px;color:var(--tenue);padding:6px 0;text-align:left;display:block}
 
 /* elenchi */
@@ -791,7 +794,10 @@ function vistaImpostazioni(){
      '<button class="b2" data-az="esporta">Mostra il testo da copiare</button>';
   if(S.export) h+='<textarea class="campo export" rows="7" readonly>'+esc(S.export)+'</textarea>';
   h+='<span class="etichetta sopra">Ripristina</span>'+
-     '<textarea class="campo export" data-in="importa" rows="4" placeholder="Incolla qui il testo di un backup"></textarea>'+
+     '<div class="nota">Serve per rivedere il diario su un altro dispositivo, o per rimetterlo a posto dopo un guaio. I giorni del file prendono il posto di quelli presenti qui.</div>'+
+     '<label class="b2">Scegli il file di backup'+
+     '<input class="file-nascosto" type="file" accept=".json,application/json" data-in="file-backup"></label>'+
+     '<textarea class="campo export" data-in="importa" rows="4" placeholder="…oppure incolla qui il testo di un backup"></textarea>'+
      '<button class="b2" data-az="importa">Ripristina da questo testo</button></section>';
 
   h+='<section class="pannello"><div class="etichetta">Come funziona</div>'+
@@ -854,6 +860,18 @@ document.getElementById("app").addEventListener("click",function(ev){
   else if(az==="esporta"){ S.export=JSON.stringify(raccogli()); render(); }
   else if(az==="scarica"){ scaricaBackup(); }
   else if(az==="importa"){ ripristina(); }
+});
+
+/* Ripristino da file: incollare il testo di un backup è scomodo su un
+   computer, e serve proprio quando si vuole rivedere il diario altrove. */
+document.getElementById("app").addEventListener("change",function(ev){
+  var e=ev.target;
+  if(e.getAttribute("data-in")!=="file-backup") return;
+  var f=e.files&&e.files[0]; if(!f) return;
+  var lettore=new FileReader();
+  lettore.onload=function(){ S.importa=String(lettore.result||""); ripristina(); };
+  lettore.onerror=function(){ S.msg="Non sono riuscito a leggere quel file."; render(); };
+  lettore.readAsText(f);
 });
 
 document.getElementById("app").addEventListener("input",function(ev){
