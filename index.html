@@ -493,14 +493,24 @@ function ricTotali(){
 function render(){
   applicaTema();
   var h="";
-  /* Con un giorno aperto dalla striscia, il titolo segue quel giorno:
-     tutta la schermata parla di lui, non può dire "Oggi". */
+  /* Il titolone dice dove sei. Nella schermata di oggi è il giorno — e con un
+     giorno aperto dalla striscia diventa quel giorno, perché tutta la
+     schermata parla di lui. Nelle altre schermate è il nome della schermata:
+     scritto "Oggi" sopra lo Storico sembrava un errore. */
   var mostrato=(S.vista==="oggi"&&S.aperto)?S.aperto:S.data;
   var oggi=mostrato===oggiISO();
+  var titolo, sotto;
+  if(S.vista==="oggi"){ titolo=oggi?"Oggi":dataEstesa(mostrato); sotto=oggi?dataEstesa(mostrato):""; }
+  else if(S.vista==="aggiungi"){ titolo="Aggiungi"; sotto=dataEstesa(S.data); }
+  else if(S.vista==="storico"){
+    var ng=Object.keys(S.indice).length;
+    titolo="Storico"; sotto=ng?(ng+(ng===1?" giorno registrato":" giorni registrati")):"";
+  }
+  else { titolo="Impostazioni"; sotto=""; }
   h+='<header class="testata"><div class="testata-riga"><div>'+
      '<div class="occhiello">Diario</div>'+
-     '<h1 class="data-titolo">'+(oggi?"Oggi":dataEstesa(mostrato))+'</h1>'+
-     (oggi?'<div class="data-sotto">'+dataEstesa(mostrato)+'</div>':"")+'</div>'+
+     '<h1 class="data-titolo">'+titolo+'</h1>'+
+     (sotto?'<div class="data-sotto">'+sotto+'</div>':"")+'</div>'+
      '<div class="spia"></div></div></header>';
 
   if(S.msg) h+='<div class="avviso" data-az="chiudi-msg">'+esc(S.msg)+' <span class="avviso-x">chiudi</span></div>';

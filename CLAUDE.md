@@ -112,6 +112,11 @@ Non ribaltarle senza dirglielo esplicitamente.
   morti e ha concluso che l'app era rotta. Non reintrodurre eccezioni qui.
   Lo stesso blocco (`dettaglioGiorno`) alimenta anche il dettaglio nello Storico:
   se lo cambi, cambiano tutti e due.
+- **Il titolone in cima dice dove sei** (chiesto il 2026-08-21). Prima era sempre
+  "Oggi" con la data, in tutte e quattro le schermate: sopra lo Storico sembrava un
+  errore. Ora è "Aggiungi", "Storico" (con il numero di giorni registrati sotto) o
+  "Impostazioni"; nella schermata di oggi resta il giorno, e con un giorno aperto
+  dalla striscia diventa quel giorno.
 - **Lo Storico si apre sul mese** (chiesto il 2026-08-21). Calendario del mese con i
   giorni registrati toccabili, una lineetta colorata sotto il numero — verde sotto
   l'obiettivo, blu in deficit, rossa sopra il fabbisogno — e sotto i totali: grammi
@@ -168,7 +173,7 @@ Non aggiungere ombre, sfumature o animazioni decorative.
 
 ## Prima di chiudere una sessione
 
-1. **Alza il numero di versione della cache in `sw.js`** (`diario-v10` → `diario-v11`).
+1. **Alza il numero di versione della cache in `sw.js`** (`diario-v11` → `diario-v12`).
    Dal 2026-08-18 il service worker chiede la pagina prima alla rete, quindi una
    versione nuova arriva con un ricaricamento solo; il numero di cache va alzato
    lo stesso, governa la copia di riserva usata offline.
