@@ -14,7 +14,7 @@
 @font-face{font-family:'X';src:local('Helvetica')}
 :root{
   --carta:#E9ECE6; --superficie:#FFFFFF; --inchiostro:#141B18; --tenue:#5B6661;
-  --linea:#CDD3CB; --blu:#1F4A6B; --senape:#C08411; --rosso:#A3341F;
+  --linea:#CDD3CB; --blu:#1F4A6B; --senape:#C08411; --rosso:#A3341F; --verde:#2E6B4F;
   /* su-inchiostro: il testo sopra i fondi color inchiostro. Nel tema scuro
      l'inchiostro diventa chiaro, quindi questo deve diventare scuro. */
   --su-inchiostro:#F2F5F1;
@@ -29,7 +29,7 @@
    dire la stessa cosa, altrimenti i numeri smetterebbero di parlare. */
 :root[data-tema="scuro"]{
   --carta:#121614; --superficie:#1B211E; --inchiostro:#E6EBE7; --tenue:#96A29C;
-  --linea:#2F3936; --blu:#6FA8CE; --senape:#D9A441; --rosso:#D9694B;
+  --linea:#2F3936; --blu:#6FA8CE; --senape:#D9A441; --rosso:#D9694B; --verde:#4E9A72;
   --su-inchiostro:#121614;
   --traccia:#2A322F;
   --neutro:#6E7C77;
@@ -145,6 +145,35 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 .ing{display:flex;align-items:center;gap:8px;padding:9px 2px;border-bottom:1px solid var(--linea)}
 .ing-n{flex:1;font-size:14px;min-width:0}
 .ing-g{width:74px;padding:9px;text-align:center;font-size:15px;border:1px solid var(--linea);border-radius:3px;background:var(--superficie);color:var(--inchiostro)}
+
+/* storico: riepilogo del mese */
+.mese-nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:11px}
+.mese-t{font-size:20px;font-weight:800;letter-spacing:-.025em}
+.frec{width:46px;height:40px;border:1px solid var(--linea);border-radius:3px;background:var(--superficie);color:var(--inchiostro);font-size:17px;font-weight:700}
+.frec:active{background:var(--inchiostro);color:var(--su-inchiostro)}
+.frec:disabled{opacity:.28}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:14px}
+.cal-l{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--tenue);text-align:center;padding-bottom:3px}
+.cal-g{min-height:42px;border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12.5px;font-variant-numeric:tabular-nums;padding:0}
+.cal-g.spenta{background:var(--traccia);border:1px solid var(--linea);color:var(--tenue)}
+.cal-g.vuota{background:none}
+.cal-g.dato{background:var(--superficie);border:1px solid var(--inchiostro);color:var(--inchiostro);font-weight:700}
+.cal-g.dato:active{background:var(--inchiostro);color:var(--su-inchiostro)}
+.cal-g.dato.on{background:var(--inchiostro);color:var(--su-inchiostro);border-color:var(--inchiostro)}
+.cal-g i{display:block;width:15px;height:3px;border-radius:2px;background:var(--neutro)}
+.cal-g.sotto i{background:var(--verde)}
+.cal-g.medio i{background:var(--blu)}
+.cal-g.oltre i{background:var(--rosso)}
+.cal-g.oggi{outline:2px solid var(--senape);outline-offset:-2px}
+.mese-num{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--linea)}
+.mese-num .cifra-m{margin:5px 0 0}
+.mese-grasso{margin-top:16px;padding:14px;background:var(--carta);border:1px solid var(--linea);border-radius:3px}
+.mese-grasso .cifra-g{margin-top:7px}
+.legenda-cal{display:flex;flex-wrap:wrap;gap:12px;margin-top:13px}
+.legenda-cal .lg i{width:14px;height:3px;border-radius:2px;display:inline-block;background:var(--neutro)}
+.legenda-cal .lg i.sotto{background:var(--verde)}
+.legenda-cal .lg i.medio{background:var(--blu)}
+.legenda-cal .lg i.oltre{background:var(--rosso)}
 
 /* storico */
 .grafico{display:flex;gap:4px;align-items:flex-end;height:140px;margin-top:14px;position:relative}
@@ -284,7 +313,15 @@ var ARCHIVIO = [
 
 /* ---------- costanti e utilità ---------- */
 var K_CFG="diario.config", K_IDX="diario.indice", K_G="diario.g.";
-var OB_DEF={kcal:1500,fab:2500,p:160,c:120,g:45};
+var OB_DEF={kcal:1500,fab:2200,p:160,c:120,g:45};
+/* Il fabbisogno è sceso da 2500 a 2200 il 2026-08-21, chiesto da Manlio.
+   Cambiare la costante non basta: chi usa già l'app ha il vecchio numero
+   salvato in diario.config e continuerebbe a vedere 2500. FAB_V fa la
+   conversione una volta sola, e solo se lì c'è ancora il vecchio valore di
+   fabbrica: un numero scelto a mano non si tocca mai.
+   Il numero raggiunto va scritto anche da salvaCfg(), altrimenti la
+   conversione riparte a ogni avvio. */
+var FAB_V=1, FAB_VECCHIO=2500, FAB_NUOVO=2200;
 var PASTI=["Colazione","Pranzo","Cena","Spuntino"];
 var GG=["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
 var MM=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
@@ -331,7 +368,8 @@ function scrivi(k,v){
 
 /* ---------- stato ---------- */
 var S={
-  vista:"oggi", data:oggiISO(), voci:[], indice:{}, ob:OB_DEF, miei:[], recenti:[], tema:"auto",
+  vista:"oggi", data:oggiISO(), voci:[], indice:{}, ob:OB_DEF, miei:[], recenti:[], tema:"auto", fabV:FAB_V,
+  mese:null, apertoDove:"lista",
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
   aperto:null, apertoVoci:[], export:"", importa:"", msg:null, spia:"", focus:null
@@ -340,7 +378,11 @@ var S={
 function avvia(){
   var cfg=leggi(K_CFG,null);
   if(cfg){ S.ob=Object.assign({},OB_DEF,cfg.ob||{}); S.miei=cfg.miei||[]; S.recenti=cfg.recenti||[];
-           if(cfg.tema==="chiaro"||cfg.tema==="scuro"||cfg.tema==="auto") S.tema=cfg.tema; }
+           if(cfg.tema==="chiaro"||cfg.tema==="scuro"||cfg.tema==="auto") S.tema=cfg.tema;
+           if(!(Number(cfg.fabV)>=FAB_V)){
+             if(S.ob.fab===FAB_VECCHIO) S.ob.fab=FAB_NUOVO;
+             salvaCfg();
+           } }
   S.indice=leggi(K_IDX,{})||{};
   S.data=oggiISO();
   var g=leggi(K_G+S.data,{voci:[]});
@@ -349,7 +391,7 @@ function avvia(){
   render();
 }
 
-function salvaCfg(){ scrivi(K_CFG,{ob:S.ob,miei:S.miei,recenti:S.recenti,tema:S.tema}); }
+function salvaCfg(){ scrivi(K_CFG,{ob:S.ob,miei:S.miei,recenti:S.recenti,tema:S.tema,fabV:FAB_V}); }
 
 function totali(v){
   return (v||S.voci).reduce(function(t,x){
@@ -511,7 +553,12 @@ function anelli(kcal,prot,dim,spesso,conTacca){
 }
 
 var KCAL_PER_KG=7700;
-function grammiPersi(kcal){ return Math.max(0,(S.ob.fab-kcal)/KCAL_PER_KG*1000); }
+/* Il segno conta: positivo è il grasso risparmiato stando sotto il fabbisogno,
+   negativo è quello messo su superandolo. Prima il conto si fermava a zero e
+   una giornata sopra il fabbisogno sembrava una giornata neutra. */
+function grammiGrasso(kcal){ return (S.ob.fab-kcal)/KCAL_PER_KG*1000; }
+function grammiPersi(kcal){ return Math.max(0,grammiGrasso(kcal)); }
+function grammiSopra(kcal){ return Math.max(0,-grammiGrasso(kcal)); }
 function grammiMax(){ return S.ob.fab/KCAL_PER_KG*1000; }
 function grammiTarget(){ return Math.max(1,(S.ob.fab-S.ob.kcal)/KCAL_PER_KG*1000); }
 function lerp(a,b,t){ return Math.round(a+(b-a)*t); }
@@ -530,15 +577,22 @@ function coloreGrassi(gr){
    man mano che mangi. Il tratteggio segna l'obiettivo, così si vede a colpo
    d'occhio se il pieno lo supera o no. */
 function cerchioGrassi(kcal){
-  var gr=grammiPersi(kcal), gmax=grammiMax(), gtar=grammiTarget();
+  var gr=grammiPersi(kcal), su=grammiSopra(kcal), gmax=grammiMax(), gtar=grammiTarget();
   var D=118, c=D/2, Rmax=c-1;
   var r=Rmax*Math.min(1,gr/gmax), rt=Rmax*Math.min(1,gtar/gmax);
   var v='<div class="grasso"><svg class="grasso-svg" viewBox="0 0 '+D+' '+D+'" aria-hidden="true">';
   v+='<circle cx="'+c+'" cy="'+c+'" r="'+Rmax+'" style="fill:var(--traccia);stroke:var(--linea)" stroke-width="1"/>';
-  if(r>0.6) v+='<circle cx="'+c+'" cy="'+c+'" r="'+r.toFixed(1)+'" fill="'+coloreGrassi(gr)+'" class="grasso-c"/>';
-  v+='<circle cx="'+c+'" cy="'+c+'" r="'+rt.toFixed(1)+'" fill="none" style="stroke:var(--inchiostro)" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>';
-  v+='</svg><div class="grasso-n">'+num(gr)+'</div>'+
-     '<div class="col-cap">grasso stimato</div></div>';
+  if(su>0){
+    /* Il cerchio si è sgonfiato fino a sparire arrivando al fabbisogno: da lì
+       in poi ne cresce uno rosso, che è grasso guadagnato, non risparmiato.
+       La scala è quella dell'obiettivo: pieno quando hai messo su tanto
+       quanto in una buona giornata ne avresti tolto. */
+    var rs=Rmax*Math.min(1,su/gtar);
+    if(rs>0.6) v+='<circle cx="'+c+'" cy="'+c+'" r="'+rs.toFixed(1)+'" style="fill:var(--rosso)" class="grasso-c"/>';
+  } else if(r>0.6) v+='<circle cx="'+c+'" cy="'+c+'" r="'+r.toFixed(1)+'" fill="'+coloreGrassi(gr)+'" class="grasso-c"/>';
+  if(su===0) v+='<circle cx="'+c+'" cy="'+c+'" r="'+rt.toFixed(1)+'" fill="none" style="stroke:var(--inchiostro)" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>';
+  v+='</svg><div class="grasso-n'+(su>0?" rossa":"")+'">'+(su>0?"+"+num(su):num(gr))+'</div>'+
+     '<div class="col-cap">'+(su>0?"grasso guadagnato":"grasso stimato")+'</div></div>';
   return v;
 }
 
@@ -650,7 +704,7 @@ function vistaOggi(){
        '<div><div class="etichetta">'+(passato?"Deficit del giorno":"Deficit di oggi")+'</div>'+
        '<div class="cifra-m'+(deficit<0?" rossa":"")+'">'+num(deficit)+'<span class="unita"> kcal</span></div></div>'+
      '</div>'+
-     '<div class="nota">Il cerchio traduce il deficit in grammi di grasso: 7700 kcal circa un chilo. \u00c8 una stima, non quello che leggerai domani sulla bilancia. Il tratteggio segna i '+num(grammiTarget())+' g del tuo obiettivo: verde pieno l\u00ec, rosso se scendi molto sotto.</div>'+
+     '<div class="nota">Il cerchio traduce il deficit in grammi di grasso: 7700 kcal circa un chilo. \u00c8 una stima, non quello che leggerai domani sulla bilancia. Il tratteggio segna i '+num(grammiTarget())+' g del tuo obiettivo: verde pieno l\u00ec, rosso se scendi molto sotto. Se superi le '+S.ob.fab+' kcal di fabbisogno il cerchio diventa rosso e conta i grammi guadagnati.</div>'+
      '</section>';
 
   // settimana
@@ -815,10 +869,108 @@ function vistaAggiungi(){
   return h;
 }
 
+/* ---------- il mese nello storico ----------
+   Lo storico si apriva sugli ultimi giorni e basta: per capire com'era andato
+   un mese intero bisognava scorrere. Qui sopra c'è il mese, con il calendario
+   dei giorni registrati e i totali, e in evidenza i grammi di grasso, che è
+   il numero che gli interessa.
+   Il conto dei grammi usa il fabbisogno di adesso, anche sui mesi vecchi: se
+   cambi il fabbisogno in Impostazioni, tutto lo storico si rilegge con il
+   numero nuovo. È voluto — serve a confrontare i mesi con lo stesso metro. */
+function meseDiOggi(){ var d=new Date(); return d.getFullYear()+"-"+p2(d.getMonth()+1); }
+function meseSposta(m,n){
+  var a=m.split("-").map(Number), d=new Date(a[0],a[1]-1+n,1);
+  return d.getFullYear()+"-"+p2(d.getMonth()+1);
+}
+function meseEsteso(m){ var a=m.split("-").map(Number); return MM[a[1]-1]+" "+a[0]; }
+function datiMese(m){
+  var t={n:0,kcal:0,p:0,c:0,g:0,persi:0,presi:0,sotto:0};
+  Object.keys(S.indice).forEach(function(d){
+    if(d.slice(0,7)!==m) return;
+    var v=S.indice[d];
+    t.n++; t.kcal+=v.kcal; t.p+=v.p; t.c+=v.c; t.g+=v.g;
+    t.persi+=grammiPersi(v.kcal); t.presi+=grammiSopra(v.kcal);
+    if(v.kcal<=S.ob.kcal) t.sotto++;
+  });
+  return t;
+}
+function pannelloMese(){
+  var oggiM=meseDiOggi();
+  var chiavi=Object.keys(S.indice).sort();
+  var primoM=chiavi.length?chiavi[0].slice(0,7):oggiM;
+  var m=S.mese||oggiM;
+  if(m>oggiM) m=oggiM;
+  if(m<primoM) m=primoM;
+  S.mese=m;
+  var t=datiMese(m), a=m.split("-").map(Number);
+  var neiMese=new Date(a[0],a[1],0).getDate();
+  var primoGiorno=(new Date(a[0],a[1]-1,1).getDay()+6)%7;  /* la settimana parte da lunedì */
+  var oggi=oggiISO();
+
+  var h='<section class="pannello"><div class="etichetta">Mese per mese</div>'+
+    '<div class="mese-nav">'+
+      '<button class="frec" data-az="mese" data-v="-1"'+(m<=primoM?" disabled":"")+' aria-label="mese precedente">‹</button>'+
+      '<div class="mese-t">'+meseEsteso(m)+'</div>'+
+      '<button class="frec" data-az="mese" data-v="1"'+(m>=oggiM?" disabled":"")+' aria-label="mese successivo">›</button>'+
+    '</div>';
+
+  h+='<div class="cal">';
+  ["L","M","M","G","V","S","D"].forEach(function(l){ h+='<div class="cal-l">'+l+'</div>'; });
+  for(var i=0;i<primoGiorno;i++) h+='<div class="cal-g vuota"></div>';
+  for(var g=1;g<=neiMese;g++){
+    var iso=m+"-"+p2(g), v=S.indice[iso];
+    var cl=(iso===oggi?" oggi":"");
+    if(!v){ h+='<div class="cal-g spenta'+cl+'">'+g+'</div>'; continue; }
+    /* Ogni giorno con dati si tocca e si apre qui sotto. I giorni vuoti sono
+       grigi e piatti: si vede che non c'è niente da aprire, non sembrano
+       pulsanti rotti. */
+    var qual=v.kcal<=S.ob.kcal?"sotto":(v.kcal<=S.ob.fab?"medio":"oltre");
+    h+='<button class="cal-g dato '+qual+cl+(S.aperto===iso&&S.apertoDove==="cal"?" on":"")+
+       '" data-az="apri" data-dove="cal" data-d="'+iso+'">'+g+'<i></i></button>';
+  }
+  h+='</div>';
+
+  h+='<div class="legenda-cal">'+
+     '<span class="lg"><i class="sotto"></i>Sotto l’obiettivo</span>'+
+     '<span class="lg"><i class="medio"></i>In deficit</span>'+
+     '<span class="lg"><i class="oltre"></i>Sopra il fabbisogno</span>'+
+     '</div>';
+  h+='<div class="p-piede">Tocca un giorno del calendario per aprirne la scheda.</div>';
+  /* La scheda va qui, attaccata al calendario: in fondo al pannello resterebbe
+     sotto lo schermo e il tocco sembrerebbe non aver fatto niente. */
+  if(S.aperto&&S.apertoDove==="cal"&&S.aperto.slice(0,7)===m){
+    h+='<div class="dett">'+dettaglioGiorno(S.apertoVoci,true)+'</div>';
+  }
+
+  if(t.n===0){
+    h+='<div class="p-piede">Nessun giorno registrato in questo mese.</div></section>';
+    return h;
+  }
+
+  var netto=t.persi-t.presi;
+  h+='<div class="mese-grasso"><div class="etichetta">'+(netto>=0?"Grasso perso nel mese":"Grasso guadagnato nel mese")+'</div>'+
+     '<div class="cifra-g'+(netto<0?" rossa":"")+'">'+num(Math.abs(netto))+'<span class="unita"> g · circa '+num(Math.abs(netto)/1000,2)+' kg</span></div>'+
+     '<div class="p-piede">'+num(t.persi)+' g risparmiati nei giorni sotto le '+S.ob.fab+' kcal'+
+     (t.presi>0?", "+num(t.presi)+" g ripresi in quelli sopra":"")+
+     '. Stima sui '+t.n+(t.n===1?" giorno registrato":" giorni registrati")+', non quello che dice la bilancia.</div></div>';
+
+  h+='<div class="mese-num">'+
+     '<div><div class="mini-et">Giorni registrati</div><div class="cifra-m">'+t.n+'<span class="unita"> su '+neiMese+'</span></div></div>'+
+     '<div><div class="mini-et">Sotto l’obiettivo</div><div class="cifra-m">'+t.sotto+'<span class="unita"> giorni su '+t.n+'</span></div></div>'+
+     '<div><div class="mini-et">Media al giorno</div><div class="cifra-m'+(t.kcal/t.n>S.ob.kcal?" rossa":"")+'">'+num(t.kcal/t.n)+'<span class="unita"> kcal</span></div></div>'+
+     '<div><div class="mini-et">Proteine medie</div><div class="cifra-m">'+num(t.p/t.n)+'<span class="unita"> / '+S.ob.p+' g</span></div></div>'+
+     '<div><div class="mini-et">Carboidrati medi</div><div class="cifra-m">'+num(t.c/t.n)+'<span class="unita"> g</span></div></div>'+
+     '<div><div class="mini-et">Grassi medi</div><div class="cifra-m">'+num(t.g/t.n)+'<span class="unita"> g</span></div></div>'+
+     '</div>';
+
+  h+='</section>';
+  return h;
+}
+
 function vistaStorico(){
   var giorni=Object.keys(S.indice).sort().reverse();
   if(giorni.length===0) return '<div class="vuoto">Lo storico si riempie da solo: ogni giorno registrato resta qui.</div>';
-  var h="", ultimi=giorni.slice(0,14).slice().reverse();
+  var h=pannelloMese(), ultimi=giorni.slice(0,14).slice().reverse();
   var max=Math.max.apply(null,[S.ob.kcal,1].concat(ultimi.map(function(d){return S.indice[d].kcal;})));
   var s7=giorni.slice(0,7);
   var m7={kcal:s7.reduce(function(a,d){return a+S.indice[d].kcal;},0)/s7.length,
@@ -843,7 +995,7 @@ function vistaStorico(){
     h+='<div class="gruppo"><button class="giorno" data-az="apri" data-d="'+d+'"><div>'+
        '<div class="gg-d">'+dataEstesa(d)+'</div><div class="gg-m">P '+v.p+' · C '+v.c+' · G '+v.g+' · '+v.n+(v.n===1?' voce':' voci')+'</div></div>'+
        '<div class="gg-k'+(v.kcal>S.ob.kcal?" rossa":"")+'">'+v.kcal+' kcal</div></button>';
-    if(S.aperto===d){
+    if(S.aperto===d&&S.apertoDove!=="cal"){
       h+='<div class="dett">'+dettaglioGiorno(S.apertoVoci,true)+'</div>';
     }
     h+='</div>';
@@ -940,10 +1092,14 @@ document.getElementById("app").addEventListener("click",function(ev){
     }
   }
   else if(az==="apri"){
-    var d=b.getAttribute("data-d");
-    if(S.aperto===d){S.aperto=null;} else {S.aperto=d;S.apertoVoci=(leggi(K_G+d,{voci:[]}).voci)||[];}
+    var d=b.getAttribute("data-d"), dove=b.getAttribute("data-dove")||"lista";
+    /* Lo stesso giorno compare nel calendario e nell'elenco sotto: senza
+       sapere da dove è stato toccato, la scheda si aprirebbe in due posti. */
+    if(S.aperto===d&&S.apertoDove===dove){S.aperto=null;}
+    else {S.aperto=d;S.apertoDove=dove;S.apertoVoci=(leggi(K_G+d,{voci:[]}).voci)||[];}
     render();
   }
+  else if(az==="mese"){ S.mese=meseSposta(S.mese||meseDiOggi(),Number(v)); S.aperto=null; render(); }
   else if(az==="tema"){ S.tema=b.getAttribute("data-t"); salvaCfg(); render(); }
   else if(az==="togli-mio"){ var mid=b.getAttribute("data-id"); S.miei=S.miei.filter(function(m){return m.id!==mid;}); salvaCfg(); render(); }
   else if(az==="esporta"){ S.export=JSON.stringify(raccogli()); render(); }
@@ -1002,7 +1158,9 @@ function ripristina(){
     if(!d.giorni) throw new Error("formato");
     Object.keys(d.giorni).forEach(function(k){ scrivi(K_G+k,d.giorni[k]); });
     if(d.indice) scrivi(K_IDX,d.indice);
-    if(d.ob||d.miei) scrivi(K_CFG,{ob:d.ob||S.ob,miei:d.miei||S.miei,recenti:S.recenti});
+    /* Niente fabV qui apposta: un backup di prima del 2026-08-21 riporta il
+       fabbisogno a 2500, e al riavvio la conversione lo rimette a 2200. */
+    if(d.ob||d.miei) scrivi(K_CFG,{ob:d.ob||S.ob,miei:d.miei||S.miei,recenti:S.recenti,tema:S.tema});
     S.importa=""; S.msg="Ripristinato. Ricarico…";
     render(); setTimeout(function(){location.reload();},900);
   }catch(e){ S.msg="Quel testo non è un backup valido."; render(); }

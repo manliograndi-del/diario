@@ -45,7 +45,7 @@ il vecchio indirizzo con la D maiuscola non vale più).
 
 `localStorage`, con questi prefissi:
 
-- `diario.config` → `{ob:{kcal,fab,p,c,g}, miei:[...], recenti:[...]}`
+- `diario.config` → `{ob:{kcal,fab,p,c,g}, miei:[...], recenti:[...], tema, fabV}`
 - `diario.indice` → `{"2026-08-17": {kcal,p,c,g,n}, ...}` — riepiloghi per lo storico
 - `diario.g.YYYY-MM-DD` → `{voci:[...], totali:{...}}` — un file per giorno
 
@@ -61,17 +61,35 @@ Non c'è un server da cui recuperare: quei dati esistono solo sul suo telefono.
 
 Non ribaltarle senza dirglielo esplicitamente.
 
-- **L'anello esterno è tarato sul fabbisogno (2500 kcal), non sull'obiettivo (1500).**
+- **L'anello esterno è tarato sul fabbisogno, non sull'obiettivo (1500).**
   Così l'arco vuoto rappresenta il deficit. La tacca nera segna l'obiettivo.
+- **Il fabbisogno è 2200 kcal dal 2026-08-21** (prima 2500, l'ha chiesto lui).
+  Cambiare `OB_DEF` non bastava: il numero vecchio era già salvato in
+  `diario.config` sul suo telefono. La conversione la fa `FAB_V` in `avvia()`, una
+  volta sola e **solo se lì c'è ancora il valore di fabbrica 2500**: un fabbisogno
+  scelto a mano in Impostazioni non viene mai toccato.
+  **Attenzione:** `fabV` va scritto anche da `salvaCfg()`, altrimenti la conversione
+  riparte a ogni avvio. `ripristina()` invece non lo scrive apposta, così un backup
+  di prima del 2026-08-21 (che riporta 2500) viene riconvertito al riavvio.
+  Da 2200 discende tutto il resto: l'anello, il deficit, i grammi di grasso e
+  l'obiettivo del cerchio, che ora sta a ~91 g invece di 130.
 - **L'anello interno sono le proteine** su 160 g.
 - **Il cerchio dei grammi di grasso** usa 7700 kcal ≈ 1 kg. Era una colonna verticale
   fino al 2026-08-18: lui ha chiesto un cerchio, e il cerchio è più leggibile.
   Il **diametro** è proporzionale ai grammi risparmiati sul massimo teorico (il
-  fabbisogno intero, ~325 g): pieno quando non hai mangiato niente, si sgonfia man
-  mano che mangi. Il cerchio tratteggiato segna i ~130 g dell'obiettivo. La cifra è
-  orizzontale, grande e **senza `g`** — l'ha chiesto così.
-  Il colore è ancorato all'obiettivo: ambra a 0 g, **verde pieno a 130 g** (il suo
-  target), poi virata al rosso, rosso pieno a 260 g.
+  fabbisogno intero, ~286 g con 2200 kcal): pieno quando non hai mangiato niente, si
+  sgonfia man mano che mangi. Il cerchio tratteggiato segna i grammi dell'obiettivo
+  (~91 g). La cifra è orizzontale, grande e **senza `g`** — l'ha chiesto così.
+  Il colore è ancorato all'obiettivo: ambra a 0 g, **verde pieno sull'obiettivo** (i
+  ~91 g), poi virata al rosso, rosso pieno al doppio. Quei numeri non sono scritti da
+  nessuna parte: escono da fabbisogno e obiettivo, e si spostano se lui li cambia.
+  **Sopra il fabbisogno il cerchio diventa rosso e conta i grammi guadagnati**
+  (dal 2026-08-21). Prima il conto si fermava a zero: una giornata sopra il
+  fabbisogno sembrava una giornata neutra, e con 2200 kcal capita molto più spesso
+  che con 2500. `grammiGrasso()` tiene il segno, `grammiPersi()` e `grammiSopra()`
+  ne prendono i due lati. Il disco rosso cresce sulla scala dell'obiettivo: pieno
+  quando hai messo su tanto quanto in una buona giornata ne avresti tolto. Lì il
+  tratteggio dell'obiettivo sparisce, finirebbe sotto il disco.
   Il gradiente **non è monotòno di proposito**: un gradiente che diventa sempre più
   verde man mano che mangi meno premierebbe il non mangiare. Se chiede di renderlo
   monotòno, fallo, ma ricordagli perché era così.
@@ -94,6 +112,21 @@ Non ribaltarle senza dirglielo esplicitamente.
   morti e ha concluso che l'app era rotta. Non reintrodurre eccezioni qui.
   Lo stesso blocco (`dettaglioGiorno`) alimenta anche il dettaglio nello Storico:
   se lo cambi, cambiano tutti e due.
+- **Lo Storico si apre sul mese** (chiesto il 2026-08-21). Calendario del mese con i
+  giorni registrati toccabili, una lineetta colorata sotto il numero — verde sotto
+  l'obiettivo, blu in deficit, rossa sopra il fabbisogno — e sotto i totali: grammi
+  di grasso persi (o guadagnati) nel mese, giorni registrati, giorni sotto
+  l'obiettivo, medie di calorie, proteine, carboidrati e grassi.
+  Le frecce si fermano al primo mese registrato e al mese corrente; i mesi vuoti in
+  mezzo si aprono lo stesso, un mese senza niente dice quanto uno pieno.
+  I giorni senza dati sono grigi e piatti, non pulsanti muti.
+  **La scheda del giorno toccato compare subito sotto il calendario**, non in fondo
+  al pannello: là sarebbe fuori schermo e il tocco sembrerebbe non fare niente.
+  Lo stesso giorno compare anche nell'elenco sotto: `S.apertoDove` dice da dove è
+  stato toccato, altrimenti la scheda si aprirebbe in due posti insieme.
+  **I grammi di ogni mese passato sono ricalcolati con il fabbisogno di adesso**, di
+  proposito: serve a confrontare i mesi con lo stesso metro. Se cambia il
+  fabbisogno, cambia tutto lo storico.
 - **Il salvataggio è ritardato di 500 ms** per non riscrivere a ogni tocco, e viene
   forzato su `pagehide` e `visibilitychange`. Senza quel recupero, una voce
   registrata e seguita dalla chiusura immediata dell'app andrebbe persa.
@@ -123,7 +156,8 @@ Non ribaltarle senza dirglielo esplicitamente.
 Palette (variabili CSS in `:root`, usale, non inventare colori):
 `--carta #E9ECE6` · `--superficie #FFF` · `--inchiostro #141B18` · `--tenue #5B6661`
 `--linea #CDD3CB` · `--blu #1F4A6B` (calorie) · `--senape #C08411` (proteine)
-`--rosso #A3341F` · `--verde #2E6B4F`
+`--rosso #A3341F` · `--verde #2E6B4F` (aggiunto davvero il 2026-08-21: prima il
+verde esisteva solo dentro `coloreGrassi()` e questo file lo dava per scontato)
 Più `--su-inchiostro` (il testo sopra i fondi color inchiostro), `--traccia` (le piste
 vuote di anelli e nastri), `--neutro`, `--linea-prot`. Servono al tema scuro: se scrivi
 un colore fisso invece di una variabile, di notte diventa illeggibile.
@@ -134,7 +168,7 @@ Non aggiungere ombre, sfumature o animazioni decorative.
 
 ## Prima di chiudere una sessione
 
-1. **Alza il numero di versione della cache in `sw.js`** (`diario-v5` → `diario-v6`).
+1. **Alza il numero di versione della cache in `sw.js`** (`diario-v10` → `diario-v11`).
    Dal 2026-08-18 il service worker chiede la pagina prima alla rete, quindi una
    versione nuova arriva con un ricaricamento solo; il numero di cache va alzato
    lo stesso, governa la copia di riserva usata offline.
