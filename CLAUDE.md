@@ -132,6 +132,19 @@ Non ribaltarle senza dirglielo esplicitamente.
   **I grammi di ogni mese passato sono ricalcolati con il fabbisogno di adesso**, di
   proposito: serve a confrontare i mesi con lo stesso metro. Se cambia il
   fabbisogno, cambia tutto lo storico.
+- **Sul quadrante si cambia giorno scorrendo il dito** (chiesto il 2026-08-22):
+  a destra il giorno prima, a sinistra quello dopo, **dentro i sette giorni della
+  striscia** — così dove sei è sempre segnato sotto, e oltre oggi non si va.
+  Il gesto vale **solo sul quadrante**, non su tutta la pagina: più in basso ci sono
+  elenchi e pulsanti, e un dito storto lì avrebbe cambiato giorno per sbaglio.
+  Sono eventi `pointer`, non `touch`: valgono anche col mouse, e il browser manda
+  `pointercancel` appena capisce che quel dito sta scorrendo la pagina, quindi un
+  movimento verticale non cambia mai giorno. Serve `touch-action:pan-y` sul
+  `.quadrante`, altrimenti lo scorrimento verticale se lo prende tutto il browser
+  e quello orizzontale non arriva mai. Soglie: 50 px di corsa, meno di 40 px di
+  deriva verticale.
+  Per andare più indietro di sette giorni c'è lo Storico: la striscia è ancorata a
+  oggi, non è una finestra che scorre.
 - **Il salvataggio è ritardato di 500 ms** per non riscrivere a ogni tocco, e viene
   forzato su `pagehide` e `visibilitychange`. Senza quel recupero, una voce
   registrata e seguita dalla chiusura immediata dell'app andrebbe persa.
@@ -173,7 +186,7 @@ Non aggiungere ombre, sfumature o animazioni decorative.
 
 ## Prima di chiudere una sessione
 
-1. **Alza il numero di versione della cache in `sw.js`** (`diario-v12` → `diario-v13`).
+1. **Alza il numero di versione della cache in `sw.js`** (`diario-v13` → `diario-v14`).
    Dal 2026-08-18 il service worker chiede la pagina prima alla rete, quindi una
    versione nuova arriva con un ricaricamento solo; il numero di cache va alzato
    lo stesso, governa la copia di riserva usata offline.

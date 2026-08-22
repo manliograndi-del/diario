@@ -197,7 +197,9 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 
 
 /* quadrante */
-.quadrante{padding:20px 16px 16px}
+/* pan-y: lo scorrimento verticale della pagina resta al browser, quello
+   orizzontale arriva a noi e diventa il cambio di giorno. */
+.quadrante{padding:20px 16px 16px;touch-action:pan-y}
 .quad-riga{display:flex;align-items:center;justify-content:center;gap:16px}
 .anelli-box{position:relative;display:flex;justify-content:center;align-items:center;flex-shrink:0}
 .grasso{display:flex;flex-direction:column;align-items:center;gap:9px;flex:0 1 118px;min-width:74px}
@@ -737,7 +739,7 @@ function vistaOggi(){
   h+='</div><div class="p-piede">'+
      (np===0?"Nessun giorno registrato ancora."
       :"Media "+num(tot7/np)+" kcal e "+num(totP/np)+" g di proteine al giorno.")+
-     ' Tocca un giorno per aprirne la scheda.'+
+     ' Tocca un giorno per aprirne la scheda, oppure scorri con il dito sui cerchi grandi qui sopra.'+
      '</div></section>';
 
   if(aperto){
@@ -1118,6 +1120,39 @@ document.getElementById("app").addEventListener("click",function(ev){
   else if(az==="esporta"){ S.export=JSON.stringify(raccogli()); render(); }
   else if(az==="scarica"){ scaricaBackup(); }
   else if(az==="importa"){ ripristina(); }
+});
+
+/* Scorrendo il dito sul quadrante si cambia giorno: a sinistra il giorno dopo,
+   a destra quello prima, dentro i sette giorni della striscia. Oltre oggi non si
+   va — un domani da leggere non c'è — e più indietro c'è lo Storico.
+   Sono eventi "pointer" e non "touch" apposta: funzionano anche col mouse, e il
+   browser manda pointercancel appena decide che quel dito sta scorrendo la
+   pagina, così un movimento verticale non fa mai cambiare giorno per sbaglio. */
+function giornoScorri(n){
+  var g=ultimi7().map(function(x){return x.iso;});
+  var i=(S.aperto&&g.indexOf(S.aperto)>=0)?g.indexOf(S.aperto):g.length-1;
+  var j=i+n;
+  if(j<0||j>g.length-1) return;
+  var iso=g[j];
+  if(iso===S.data){ S.aperto=null; }
+  else { S.aperto=iso; S.apertoDove="lista"; S.apertoVoci=(leggi(K_G+iso,{voci:[]}).voci)||[]; }
+  render();
+}
+var tocco=null;
+document.getElementById("app").addEventListener("pointerdown",function(ev){
+  tocco=null;
+  if(S.vista!=="oggi"||!ev.target.closest) return;
+  if(!ev.target.closest(".quadrante")) return;
+  tocco={x:ev.clientX,y:ev.clientY,id:ev.pointerId};
+});
+document.getElementById("app").addEventListener("pointercancel",function(){ tocco=null; });
+document.getElementById("app").addEventListener("pointerup",function(ev){
+  if(!tocco||ev.pointerId!==tocco.id) return;
+  var dx=ev.clientX-tocco.x, dy=ev.clientY-tocco.y;
+  tocco=null;
+  /* 50 px di corsa e poca deriva in verticale: un tocco fermo o storto non conta */
+  if(Math.abs(dx)<50||Math.abs(dy)>40) return;
+  giornoScorri(dx<0?1:-1);
 });
 
 /* Ripristino da file: incollare il testo di un backup è scomodo su un
