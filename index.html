@@ -254,8 +254,17 @@ button.sg{padding:2px 0}
 
 /* Qui c'era la transizione del cambio giorno, provata il 2026-08-22 e tolta lo
    stesso giorno: a Manlio sembrava un salto anche rallentata. Il giorno nuovo
-   compare e basta. Non rimetterla senza che la chieda lui. */
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+   compare e basta. Non rimetterla senza che la chieda lui.
+   Il rimbalzo qui sotto è un'altra cosa e l'ha chiesto lui: non accompagna un
+   cambio di pagina, risponde a un gesto che non può andare da nessuna parte —
+   oltre oggi, o prima del primo giorno registrato. Senza, il dito scorreva e
+   non succedeva niente, che sembra un guasto. */
+@keyframes rimbalzo-sx{40%{transform:translateX(-13px)}100%{transform:none}}
+@keyframes rimbalzo-dx{40%{transform:translateX(13px)}100%{transform:none}}
+.rimbalza-sx{animation:rimbalzo-sx .3s cubic-bezier(.3,0,.3,1)}
+.rimbalza-dx{animation:rimbalzo-dx .3s cubic-bezier(.3,0,.3,1)}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -1170,9 +1179,21 @@ document.getElementById("app").addEventListener("click",function(ev){
    Sono eventi "pointer" e non "touch" apposta: funzionano anche col mouse, e il
    browser manda pointercancel appena decide che quel dito sta scorrendo la
    pagina, così un movimento verticale non fa mai cambiare giorno per sbaglio. */
+/* Il rimbalzo non ridisegna niente — non è cambiato niente da disegnare —
+   quindi lavora direttamente sulla pagina già in piedi. Il classList.remove più
+   il offsetWidth servono a farlo ripartire anche se il dito insiste: senza,
+   dalla seconda volta in poi il browser non lo rifà. */
+function rimbalzo(n){
+  var e=document.querySelector(".corpo"); if(!e) return;
+  var cl=(n>0)?"rimbalza-sx":"rimbalza-dx";
+  e.classList.remove("rimbalza-sx","rimbalza-dx");
+  void e.offsetWidth;
+  e.classList.add(cl);
+  e.addEventListener("animationend",function(){ e.classList.remove(cl); },{once:true});
+}
 function giornoScorri(n){
   var oggi=oggiISO(), iso=isoSposta(S.aperto||oggi,n);
-  if(iso>oggi||iso<primoGiorno()) return;
+  if(iso>oggi||iso<primoGiorno()){ rimbalzo(n); return; }
   /* Se il giorno nuovo esce dalla striscia, la striscia lo segue di un passo. */
   var fine=fineFinestra();
   if(iso>fine) fine=iso;

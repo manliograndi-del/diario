@@ -131,6 +131,14 @@ Non ribaltarle senza dirglielo esplicitamente.
   **Per la stessa ragione la riga "Giorno passato / torna a oggi" dentro il quadrante
   c'è anche su oggi**, dove porta solo l'etichetta "Oggi": se comparisse soltanto sui
   giorni passati, i cerchi scenderebbero di quaranta pixel a ogni scorrimento.
+- **Quando lo scorrimento non può andare da nessuna parte, la pagina rimbalza**
+  (chiesto il 2026-08-22): 13 px nel verso del dito e ritorno, 0,3 s. Succede oltre
+  oggi e prima del primo giorno registrato. Serve perché un gesto che non risponde
+  sembra un guasto — è lo stesso motivo per cui tutti i cerchi della striscia si
+  aprono. `rimbalzo()` non ridisegna niente (non è cambiato niente da disegnare) e
+  lavora sulla pagina già in piedi; il `classList.remove` + `offsetWidth` servono a
+  farlo ripartire quando il dito insiste. **Non è la transizione fra i giorni**, che
+  è stata tolta: questo è un movimento di risposta, e quello gli va bene.
 - **Il cambio giorno non ha nessuna transizione**: il giorno nuovo compare e basta.
   Una ce n'era, chiesta e tolta lo stesso giorno (2026-08-22). Provata a 0,24 s e poi
   a 0,36 s, con partenza quasi invisibile e la curva che distribuisce il movimento:
@@ -221,7 +229,7 @@ Non aggiungere ombre, sfumature o animazioni decorative.
 
 ## Prima di chiudere una sessione
 
-1. **Alza il numero di versione della cache in `sw.js`** (`diario-v17` → `diario-v18`).
+1. **Alza il numero di versione della cache in `sw.js`** (`diario-v18` → `diario-v19`).
    Dal 2026-08-18 il service worker chiede la pagina prima alla rete, quindi una
    versione nuova arriva con un ricaricamento solo; il numero di cache va alzato
    lo stesso, governa la copia di riserva usata offline.
