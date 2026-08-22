@@ -331,6 +331,9 @@ function oggiISO(){var d=new Date();return d.getFullYear()+"-"+p2(d.getMonth()+1
 function oraOra(){var d=new Date();return p2(d.getHours())+":"+p2(d.getMinutes());}
 function pastoDaOra(){var h=new Date().getHours();return h<11?"Colazione":h<15?"Pranzo":h<18?"Spuntino":"Cena";}
 function num(v,dec){var n=Number(v)||0;return n.toFixed(dec||0).replace(".",",");}
+/* I nomi dei giorni escono minuscoli da GG: in cima alla pagina, dove sono un
+   titolo, la maiuscola ci vuole. */
+function maiuscola(t){ return t?t.charAt(0).toUpperCase()+t.slice(1):t; }
 function dataEstesa(iso){var a=iso.split("-").map(Number);var d=new Date(a[0],a[1]-1,a[2]);return GG[d.getDay()]+" "+d.getDate()+" "+MM[d.getMonth()];}
 function dataBreve(iso){var a=iso.split("-");return Number(a[2])+"/"+Number(a[1]);}
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
@@ -500,8 +503,8 @@ function render(){
   var mostrato=(S.vista==="oggi"&&S.aperto)?S.aperto:S.data;
   var oggi=mostrato===oggiISO();
   var titolo, sotto;
-  if(S.vista==="oggi"){ titolo=oggi?"Oggi":dataEstesa(mostrato); sotto=oggi?dataEstesa(mostrato):""; }
-  else if(S.vista==="aggiungi"){ titolo="Aggiungi"; sotto=dataEstesa(S.data); }
+  if(S.vista==="oggi"){ titolo=oggi?"Oggi":maiuscola(dataEstesa(mostrato)); sotto=oggi?maiuscola(dataEstesa(mostrato)):""; }
+  else if(S.vista==="aggiungi"){ titolo="Aggiungi"; sotto=maiuscola(dataEstesa(S.data)); }
   else if(S.vista==="storico"){
     var ng=Object.keys(S.indice).length;
     titolo="Storico"; sotto=ng?(ng+(ng===1?" giorno registrato":" giorni registrati")):"";
