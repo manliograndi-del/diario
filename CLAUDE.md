@@ -132,10 +132,17 @@ Non ribaltarle senza dirglielo esplicitamente.
   c'è anche su oggi**, dove porta solo l'etichetta "Oggi": se comparisse soltanto sui
   giorni passati, i cerchi scenderebbero di quaranta pixel a ogni scorrimento.
 - **Il cambio giorno ha una transizione** (chiesta il 2026-08-22): testata e corpo
-  entrano dal lato da cui arrivi, 0,24 s (`da-destra` / `da-sinistra`, `S.anima`,
+  entrano dal lato da cui arrivi, 0,36 s (`da-destra` / `da-sinistra`, `S.anima`,
   azzerata subito dopo il disegno perché un ridisegno qualsiasi non la rifaccia).
   Vale sia per il dito sia per il tocco sulla striscia e su "torna a oggi", ma non
   nello Storico, dove si apre una scheda dentro la pagina e non si cambia pagina.
+  **Era 0,24 s da `opacity:.25` e Manlio l'ha vista come "un salto"**: la pagina
+  nuova si leggeva già ferma nel posto sbagliato e poi scattava a posto. Rallentata
+  e resa quasi invisibile all'inizio (`.06`), quello che si nota è il movimento. Se
+  la ritocchi ancora, muovi questi due numeri insieme: più è veloce, più deve
+  partire trasparente. Conta anche la curva: un ease-out secco arriva a metà
+  tempo e poi striscia, che è di nuovo uno scatto; `cubic-bezier(.4,0,.2,1)`
+  distribuisce il movimento.
   **Non è il dito che trascina la pagina**: per quello servirebbero due schermate
   disegnate insieme, e l'app ne disegna una sola per volta — è la scelta che la tiene
   semplice. Se lo chiede, digli che costa quello.
@@ -219,7 +226,7 @@ Non aggiungere ombre, sfumature o animazioni decorative.
 
 ## Prima di chiudere una sessione
 
-1. **Alza il numero di versione della cache in `sw.js`** (`diario-v15` → `diario-v16`).
+1. **Alza il numero di versione della cache in `sw.js`** (`diario-v16` → `diario-v17`).
    Dal 2026-08-18 il service worker chiede la pagina prima alla rete, quindi una
    versione nuova arriva con un ricaricamento solo; il numero di cache va alzato
    lo stesso, governa la copia di riserva usata offline.

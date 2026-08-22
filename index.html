@@ -256,10 +256,17 @@ button.sg{padding:2px 0}
    Non è il dito che trascina la pagina — per quello servirebbero due schermate
    disegnate insieme — ma il verso del movimento è quello giusto e costa un
    pugno di righe. */
-@keyframes entra-da-destra{from{opacity:.25;transform:translateX(30px)}to{opacity:1;transform:none}}
-@keyframes entra-da-sinistra{from{opacity:.25;transform:translateX(-30px)}to{opacity:1;transform:none}}
-.da-destra{animation:entra-da-destra .24s cubic-bezier(.2,.7,.3,1)}
-.da-sinistra{animation:entra-da-sinistra .24s cubic-bezier(.2,.7,.3,1)}
+/* Tempi: 0,24 s partendo da opacity .25 sembrava un salto — la pagina nuova
+   si vedeva già ferma nel posto sbagliato e poi scattava. Più lenta e molto
+   più trasparente all'inizio: nei primi fotogrammi non si legge dove sta, e
+   quello che si nota è il movimento invece dello scatto.
+   Conta anche la curva: con un ease-out secco a metà tempo era già arrivata e
+   il resto era coda, cioè di nuovo uno scatto. Questa parte piano, si muove nel
+   mezzo e si posa: a 90 ms è ancora indietro di 30 px e quasi invisibile. */
+@keyframes entra-da-destra{from{opacity:.06;transform:translateX(38px)}to{opacity:1;transform:none}}
+@keyframes entra-da-sinistra{from{opacity:.06;transform:translateX(-38px)}to{opacity:1;transform:none}}
+.da-destra{animation:entra-da-destra .36s cubic-bezier(.4,0,.2,1)}
+.da-sinistra{animation:entra-da-sinistra .36s cubic-bezier(.4,0,.2,1)}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
