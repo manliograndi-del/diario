@@ -48,10 +48,16 @@ input,textarea{font-family:inherit}
 
 /* testata */
 .testata{padding:calc(20px + env(safe-area-inset-top)) 18px 12px}
-.testata-riga{display:flex;justify-content:space-between;align-items:flex-start}
+.testata-riga{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.testata-riga>div{min-width:0}
 .occhiello{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--tenue);margin-bottom:4px}
-.data-titolo{font-size:34px;font-weight:800;line-height:1;margin:0;letter-spacing:-.03em}
-.data-sotto{font-size:13px;color:var(--tenue);margin-top:5px}
+/* Titolo e data sulla stessa riga: se la data andasse a capo, la testata
+   cambierebbe altezza da una schermata all'altra e tutto quello che sta sotto
+   — cerchi compresi — salterebbe su e giù a ogni cambio di giorno. */
+.data-titolo{font-size:34px;font-weight:800;line-height:1.05;margin:0;letter-spacing:-.03em;
+  display:flex;align-items:baseline;gap:9px;white-space:nowrap;min-width:0}
+.titolo-lato{font-size:13px;font-weight:400;letter-spacing:0;color:var(--tenue);
+  overflow:hidden;text-overflow:ellipsis;min-width:0}
 .spia{font-family:var(--mono);font-size:10.5px;color:var(--tenue);padding-top:6px;letter-spacing:.04em}
 .spia.errore{color:var(--rosso)}
 
@@ -210,7 +216,7 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 .grasso-svg{width:100%;height:auto;display:block}
 .grasso-c{transition:r .5s cubic-bezier(.2,.7,.3,1),fill .5s}
 .grasso-n{font-size:27px;font-weight:800;letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums}
-.quad-testa{margin-bottom:15px}
+.quad-testa{margin-bottom:15px;min-height:25px;align-items:center}
 .col-cap{font-family:var(--mono);font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--tenue);text-align:center;line-height:1.35}
 .anelli{display:block}
 .arco{transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.3,1)}
@@ -246,7 +252,16 @@ button.sg{padding:2px 0}
 .sc-gruppo{margin-top:12px}
 .sc-vuoto{font-size:13.5px;color:var(--tenue);line-height:1.55;margin-top:11px}
 
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* Il cambio giorno: la schermata nuova entra dal lato da cui è arrivata.
+   Non è il dito che trascina la pagina — per quello servirebbero due schermate
+   disegnate insieme — ma il verso del movimento è quello giusto e costa un
+   pugno di righe. */
+@keyframes entra-da-destra{from{opacity:.25;transform:translateX(30px)}to{opacity:1;transform:none}}
+@keyframes entra-da-sinistra{from{opacity:.25;transform:translateX(-30px)}to{opacity:1;transform:none}}
+.da-destra{animation:entra-da-destra .24s cubic-bezier(.2,.7,.3,1)}
+.da-sinistra{animation:entra-da-sinistra .24s cubic-bezier(.2,.7,.3,1)}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -378,7 +393,7 @@ function scrivi(k,v){
 /* ---------- stato ---------- */
 var S={
   vista:"oggi", data:oggiISO(), voci:[], indice:{}, ob:OB_DEF, miei:[], recenti:[], tema:"auto", fabV:FAB_V,
-  mese:null, apertoDove:"lista", finestra:null,
+  mese:null, apertoDove:"lista", finestra:null, anima:null,
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
   aperto:null, apertoVoci:[], export:"", importa:"", msg:null, spia:"", focus:null
@@ -508,23 +523,28 @@ function render(){
      scritto "Oggi" sopra lo Storico sembrava un errore. */
   var mostrato=(S.vista==="oggi"&&S.aperto)?S.aperto:S.data;
   var oggi=mostrato===oggiISO();
-  var titolo, sotto;
-  if(S.vista==="oggi"){ titolo=oggi?"Oggi":maiuscola(dataEstesa(mostrato)); sotto=oggi?maiuscola(dataEstesa(mostrato)):""; }
-  else if(S.vista==="aggiungi"){ titolo="Aggiungi"; sotto=maiuscola(dataEstesa(S.data)); }
+  var titolo, lato;
+  if(S.vista==="oggi"){
+    if(oggi){ titolo="Oggi"; lato=maiuscola(dataEstesa(mostrato)); }
+    /* Di un giorno passato il titolone porta il nome del giorno e la data gli
+       sta di fianco: così anche "Mercoledì 19 settembre" resta su una riga. */
+    else { var pezzi=dataEstesa(mostrato).split(" "); titolo=maiuscola(pezzi[0]); lato=pezzi.slice(1).join(" "); }
+  }
+  else if(S.vista==="aggiungi"){ titolo="Aggiungi"; lato=maiuscola(dataEstesa(S.data)); }
   else if(S.vista==="storico"){
     var ng=Object.keys(S.indice).length;
-    titolo="Storico"; sotto=ng?(ng+(ng===1?" giorno registrato":" giorni registrati")):"";
+    titolo="Storico"; lato=ng?(ng+(ng===1?" giorno registrato":" giorni registrati")):"";
   }
-  else { titolo="Impostazioni"; sotto=""; }
-  h+='<header class="testata"><div class="testata-riga"><div>'+
+  else { titolo="Impostazioni"; lato=""; }
+  h+='<header class="testata'+(S.anima?" "+S.anima:"")+'"><div class="testata-riga"><div>'+
      '<div class="occhiello">Diario</div>'+
-     '<h1 class="data-titolo">'+titolo+'</h1>'+
-     (sotto?'<div class="data-sotto">'+sotto+'</div>':"")+'</div>'+
+     '<h1 class="data-titolo">'+titolo+
+     (lato?'<span class="titolo-lato">'+lato+'</span>':"")+'</h1></div>'+
      '<div class="spia"></div></div></header>';
 
   if(S.msg) h+='<div class="avviso" data-az="chiudi-msg">'+esc(S.msg)+' <span class="avviso-x">chiudi</span></div>';
 
-  h+='<main class="corpo">';
+  h+='<main class="corpo'+(S.anima?" "+S.anima:"")+'">';
   if(S.vista==="oggi") h+=vistaOggi();
   else if(S.vista==="aggiungi") h+=vistaAggiungi();
   else if(S.vista==="storico") h+=vistaStorico();
@@ -539,6 +559,7 @@ function render(){
   h+='</nav>';
 
   document.getElementById("app").innerHTML=h;
+  S.anima=null;   /* vale per questo disegno soltanto: un ridisegno qualsiasi non deve rifarla */
   aggiornaSpia();
   if(S.focus){
     var e=document.querySelector('[data-in="'+S.focus+'"]');
@@ -717,11 +738,13 @@ function vistaOggi(){
   var deficit=S.ob.fab-t.kcal;
 
   h+='<section class="pannello quadrante">';
-  if(passato){
-    // la data è già il titolo della pagina: qui basta dire dove sei
-    h+='<div class="p-testa quad-testa"><span class="etichetta">Giorno passato</span>'+
-       '<button class="sc-chiudi" data-az="apri" data-d="'+aperto+'">torna a oggi</button></div>';
-  }
+  /* Questa riga c'è sempre, anche su oggi dove non ha un pulsante da mostrare:
+     se comparisse solo sui giorni passati, i cerchi scenderebbero di quaranta
+     pixel a ogni scorrimento del dito. La data è già il titolo della pagina,
+     qui basta dire dove sei. */
+  h+='<div class="p-testa quad-testa"><span class="etichetta">'+(passato?"Giorno passato":"Oggi")+'</span>'+
+     (passato?'<button class="sc-chiudi" data-az="apri" data-d="'+aperto+'">torna a oggi</button>':"")+
+     '</div>';
   h+='<div class="quad-riga">'+
      '<div class="anelli-box">'+anelli(t.kcal,t.p,176,13,true)+
      '<div class="centro">'+
@@ -1133,9 +1156,16 @@ document.getElementById("app").addEventListener("click",function(ev){
     var d=b.getAttribute("data-d"), dove=b.getAttribute("data-dove")||"lista";
     /* Lo stesso giorno compare nel calendario e nell'elenco sotto: senza
        sapere da dove è stato toccato, la scheda si aprirebbe in due posti. */
+    var chiude=(S.aperto===d&&S.apertoDove===dove);
+    /* Nella schermata di oggi il giorno cambia scorrendo o toccando la
+       striscia: in tutti e due i casi la pagina entra dal verso giusto. */
+    if(S.vista==="oggi"){
+      var prima=S.aperto||oggiISO(), dopo=chiude?oggiISO():d;
+      S.anima=(dopo>prima)?"da-destra":(dopo<prima?"da-sinistra":null);
+    }
     /* Chiudere il giorno vuol dire tornare a oggi: la striscia, se era
        arretrata, torna a finire su oggi insieme al resto. */
-    if(S.aperto===d&&S.apertoDove===dove){S.aperto=null;S.finestra=null;}
+    if(chiude){S.aperto=null;S.finestra=null;}
     else {S.aperto=d;S.apertoDove=dove;S.apertoVoci=(leggi(K_G+d,{voci:[]}).voci)||[];}
     render();
   }
@@ -1161,6 +1191,7 @@ function giornoScorri(n){
   if(iso>fine) fine=iso;
   else if(iso<isoSposta(fine,-6)) fine=isoSposta(iso,6);
   S.finestra=(fine>=oggi)?null:fine;
+  S.anima=(n>0)?"da-destra":"da-sinistra";
   if(iso===oggi){ S.aperto=null; }
   else { S.aperto=iso; S.apertoDove="lista"; S.apertoVoci=(leggi(K_G+iso,{voci:[]}).voci)||[]; }
   render();

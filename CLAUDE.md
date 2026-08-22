@@ -119,9 +119,26 @@ Non ribaltarle senza dirglielo esplicitamente.
   se lo cambi, cambiano tutti e due.
 - **Il titolone in cima dice dove sei** (chiesto il 2026-08-21). Prima era sempre
   "Oggi" con la data, in tutte e quattro le schermate: sopra lo Storico sembrava un
-  errore. Ora è "Aggiungi", "Storico" (con il numero di giorni registrati sotto) o
-  "Impostazioni"; nella schermata di oggi resta il giorno, e con un giorno aperto
-  dalla striscia diventa quel giorno.
+  errore. Ora è "Aggiungi", "Storico" o "Impostazioni"; nella schermata di oggi è
+  "Oggi", e con un giorno aperto è il nome di quel giorno.
+- **La testata è alta sempre uguale, 85 px** (chiesto il 2026-08-22). La seconda riga
+  — la data, i giorni registrati — sta **di fianco** al titolo, non sotto: quando era
+  sotto, passando da oggi a un giorno passato la testata si accorciava e tutta la
+  pagina saliva di scatto sotto il dito. Perciò il titolo di un giorno passato è il
+  nome del giorno ("Mercoledì") con "19 settembre" accanto in piccolo: intero
+  andrebbe a capo sui telefoni stretti, e si tornerebbe da capo.
+  Provato a 320, 390 e 430 px su tutte e quattro le schermate: 85 px sempre.
+  **Per la stessa ragione la riga "Giorno passato / torna a oggi" dentro il quadrante
+  c'è anche su oggi**, dove porta solo l'etichetta "Oggi": se comparisse soltanto sui
+  giorni passati, i cerchi scenderebbero di quaranta pixel a ogni scorrimento.
+- **Il cambio giorno ha una transizione** (chiesta il 2026-08-22): testata e corpo
+  entrano dal lato da cui arrivi, 0,24 s (`da-destra` / `da-sinistra`, `S.anima`,
+  azzerata subito dopo il disegno perché un ridisegno qualsiasi non la rifaccia).
+  Vale sia per il dito sia per il tocco sulla striscia e su "torna a oggi", ma non
+  nello Storico, dove si apre una scheda dentro la pagina e non si cambia pagina.
+  **Non è il dito che trascina la pagina**: per quello servirebbero due schermate
+  disegnate insieme, e l'app ne disegna una sola per volta — è la scelta che la tiene
+  semplice. Se lo chiede, digli che costa quello.
 - **Lo Storico si apre sul mese** (chiesto il 2026-08-21). Calendario del mese con i
   giorni registrati toccabili, una lineetta colorata sotto il numero — verde sotto
   l'obiettivo, blu in deficit, rossa sopra il fabbisogno — e sotto i totali: grammi
@@ -202,7 +219,7 @@ Non aggiungere ombre, sfumature o animazioni decorative.
 
 ## Prima di chiudere una sessione
 
-1. **Alza il numero di versione della cache in `sw.js`** (`diario-v14` → `diario-v15`).
+1. **Alza il numero di versione della cache in `sw.js`** (`diario-v15` → `diario-v16`).
    Dal 2026-08-18 il service worker chiede la pagina prima alla rete, quindi una
    versione nuova arriva con un ricaricamento solo; il numero di cache va alzato
    lo stesso, governa la copia di riserva usata offline.
