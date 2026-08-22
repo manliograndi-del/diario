@@ -198,8 +198,12 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 
 /* quadrante */
 /* pan-y: lo scorrimento verticale della pagina resta al browser, quello
-   orizzontale arriva a noi e diventa il cambio di giorno. */
-.quadrante{padding:20px 16px 16px;touch-action:pan-y}
+   orizzontale arriva a noi e diventa il cambio di giorno.
+   user-select: senza, un dito che parte sopra un numero fa partire il
+   trascinamento del testo, il browser manda pointercancel e il giorno non
+   cambia. Succedeva solo su certi giorni, dove al centro capitava una scritta
+   invece del disegno: il difetto peggiore, quello che sembra capriccio. */
+.quadrante{padding:20px 16px 16px;touch-action:pan-y;-webkit-user-select:none;user-select:none}
 .quad-riga{display:flex;align-items:center;justify-content:center;gap:16px}
 .anelli-box{position:relative;display:flex;justify-content:center;align-items:center;flex-shrink:0}
 .grasso{display:flex;flex-direction:column;align-items:center;gap:9px;flex:0 1 118px;min-width:74px}
@@ -374,7 +378,7 @@ function scrivi(k,v){
 /* ---------- stato ---------- */
 var S={
   vista:"oggi", data:oggiISO(), voci:[], indice:{}, ob:OB_DEF, miei:[], recenti:[], tema:"auto", fabV:FAB_V,
-  mese:null, apertoDove:"lista",
+  mese:null, apertoDove:"lista", finestra:null,
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
   aperto:null, apertoVoci:[], export:"", importa:"", msg:null, spia:"", focus:null
@@ -612,11 +616,30 @@ function cerchioGrassi(kcal){
 }
 
 
+function isoSposta(iso,n){
+  var a=iso.split("-").map(Number), d=new Date(a[0],a[1]-1,a[2]+n);
+  return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate());
+}
+/* Indietro si può andare fino al primo giorno registrato — prima non c'è
+   niente da vedere — ma i sette giorni della striscia si aprono sempre, anche
+   su un diario appena cominciato. */
+function primoGiorno(){
+  var k=Object.keys(S.indice).sort(), sette=isoSposta(oggiISO(),-6);
+  return (k.length&&k[0]<sette)?k[0]:sette;
+}
+/* La striscia è una finestra di sette giorni. Di solito finisce su oggi;
+   scorrendo il dito oltre il bordo sinistro arretra di un giorno per volta,
+   così si arriva indietro quanto si vuole senza perdere di vista dove si è.
+   S.finestra è l'ultimo giorno mostrato, e vale null quando è oggi. */
+function fineFinestra(){
+  var oggi=oggiISO();
+  return (S.finestra&&S.finestra<oggi)?S.finestra:oggi;
+}
 function ultimi7(){
-  var out=[], oggi=oggiISO();
+  var out=[], oggi=oggiISO(), fine=fineFinestra();
   for(var k=6;k>=0;k--){
-    var d=new Date(); d.setDate(d.getDate()-k);
-    var iso=d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate());
+    var iso=isoSposta(fine,-k);
+    var a=iso.split("-").map(Number), d=new Date(a[0],a[1]-1,a[2]);
     var v=S.indice[iso];
     if(iso===oggi){ var t=totali(S.voci); v={kcal:t.kcal,p:t.p,n:S.voci.length}; }
     out.push({iso:iso, lettera:["D","L","M","M","G","V","S"][d.getDay()],
@@ -719,19 +742,20 @@ function vistaOggi(){
        '<div><div class="etichetta">'+(passato?"Deficit del giorno":"Deficit di oggi")+'</div>'+
        '<div class="cifra-m'+(deficit<0?" rossa":"")+'">'+num(deficit)+'<span class="unita"> kcal</span></div></div>'+
      '</div>'+
-     '<div class="nota">Il cerchio traduce il deficit in grammi di grasso: 7700 kcal circa un chilo. \u00c8 una stima, non quello che leggerai domani sulla bilancia. Il tratteggio segna i '+num(grammiTarget())+' g del tuo obiettivo: verde pieno l\u00ec, rosso se scendi molto sotto. Se superi le '+S.ob.fab+' kcal di fabbisogno il cerchio diventa rosso e conta i grammi guadagnati.</div>'+
      '</section>';
 
   // settimana
   var centrati=0, tot7=0, np=0, totP=0;
   s7.forEach(function(g){ if(!g.vuoto){ tot7+=g.kcal; totP+=g.p; np++; if(g.kcal<=S.ob.kcal) centrati++; } });
-  h+='<section class="pannello"><div class="p-testa"><span class="etichetta">Ultimi 7 giorni</span>'+
+  var fine7=fineFinestra(), arretrata=fine7!==oggiISO();
+  h+='<section class="pannello"><div class="p-testa"><span class="etichetta">'+
+     (arretrata?"Dal "+dataBreve(s7[0].iso)+" al "+dataBreve(fine7):"Ultimi 7 giorni")+'</span>'+
      '<span class="g-kcal">'+centrati+' su '+np+' sotto '+S.ob.kcal+'</span></div><div class="settimana">';
   /* Ogni cerchio della striscia si apre, senza eccezioni: oggi compreso e
      anche i giorni senza voci. Le eccezioni sembrano guasti: chi tocca un
      cerchio che non risponde pensa che l'app sia rotta, non che sia vuota. */
-  s7.forEach(function(g,idx){
-    h+='<button class="sg'+(idx===6?" oggi":"")+(aperto===g.iso?" on":"")+'"'+
+  s7.forEach(function(g){
+    h+='<button class="sg'+(g.iso===oggiISO()?" oggi":"")+(aperto===g.iso?" on":"")+'"'+
        ' data-az="apri" data-d="'+g.iso+'">'+
        '<div class="sg-anello'+(g.vuoto?" spento":"")+'">'+anelli(g.kcal,g.p,42,4,false)+'</div>'+
        '<div class="sg-l">'+g.lettera+'</div></button>';
@@ -739,7 +763,6 @@ function vistaOggi(){
   h+='</div><div class="p-piede">'+
      (np===0?"Nessun giorno registrato ancora."
       :"Media "+num(tot7/np)+" kcal e "+num(totP/np)+" g di proteine al giorno.")+
-     ' Tocca un giorno per aprirne la scheda, oppure scorri con il dito sui cerchi grandi qui sopra.'+
      '</div></section>';
 
   if(aperto){
@@ -1065,7 +1088,7 @@ document.getElementById("app").addEventListener("click",function(ev){
   var b=ev.target.closest("[data-az]"); if(!b) return;
   var az=b.getAttribute("data-az"), v=b.getAttribute("data-v");
 
-  if(az==="vista"){ S.vista=v; S.scelto=null; S.focus=null; S.aperto=null; if(v==="aggiungi"){S.pasto=pastoDaOra();} render(); }
+  if(az==="vista"){ S.vista=v; S.scelto=null; S.focus=null; S.aperto=null; S.finestra=null; if(v==="aggiungi"){S.pasto=pastoDaOra();} render(); }
   else if(az==="chiudi-msg"){ S.msg=null; render(); }
   else if(az==="togli"){ var id=b.getAttribute("data-id"); S.voci=S.voci.filter(function(x){return x.id!==id;}); salva(); render(); }
   else if(az==="scegli"){ var a=trovaPerId(b.getAttribute("data-id")); if(a){S.scelto=a;S.grammi=a.porz||100;S.focus=null;render();} }
@@ -1110,7 +1133,9 @@ document.getElementById("app").addEventListener("click",function(ev){
     var d=b.getAttribute("data-d"), dove=b.getAttribute("data-dove")||"lista";
     /* Lo stesso giorno compare nel calendario e nell'elenco sotto: senza
        sapere da dove è stato toccato, la scheda si aprirebbe in due posti. */
-    if(S.aperto===d&&S.apertoDove===dove){S.aperto=null;}
+    /* Chiudere il giorno vuol dire tornare a oggi: la striscia, se era
+       arretrata, torna a finire su oggi insieme al resto. */
+    if(S.aperto===d&&S.apertoDove===dove){S.aperto=null;S.finestra=null;}
     else {S.aperto=d;S.apertoDove=dove;S.apertoVoci=(leggi(K_G+d,{voci:[]}).voci)||[];}
     render();
   }
@@ -1129,12 +1154,14 @@ document.getElementById("app").addEventListener("click",function(ev){
    browser manda pointercancel appena decide che quel dito sta scorrendo la
    pagina, così un movimento verticale non fa mai cambiare giorno per sbaglio. */
 function giornoScorri(n){
-  var g=ultimi7().map(function(x){return x.iso;});
-  var i=(S.aperto&&g.indexOf(S.aperto)>=0)?g.indexOf(S.aperto):g.length-1;
-  var j=i+n;
-  if(j<0||j>g.length-1) return;
-  var iso=g[j];
-  if(iso===S.data){ S.aperto=null; }
+  var oggi=oggiISO(), iso=isoSposta(S.aperto||oggi,n);
+  if(iso>oggi||iso<primoGiorno()) return;
+  /* Se il giorno nuovo esce dalla striscia, la striscia lo segue di un passo. */
+  var fine=fineFinestra();
+  if(iso>fine) fine=iso;
+  else if(iso<isoSposta(fine,-6)) fine=isoSposta(iso,6);
+  S.finestra=(fine>=oggi)?null:fine;
+  if(iso===oggi){ S.aperto=null; }
   else { S.aperto=iso; S.apertoDove="lista"; S.apertoVoci=(leggi(K_G+iso,{voci:[]}).voci)||[]; }
   render();
 }

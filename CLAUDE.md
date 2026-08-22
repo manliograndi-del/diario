@@ -95,6 +95,11 @@ Non ribaltarle senza dirglielo esplicitamente.
   monotòno, fallo, ma ricordagli perché era così.
 - **La striscia dei 7 giorni** mostra i giorni di calendario, non i 7 registrati. Le
   medie si calcolano solo sui giorni con dati, così un giorno saltato non abbassa la media.
+  Dal 2026-08-22 è una **finestra che scorre**: di norma finisce su oggi (`S.finestra`
+  vale `null`), e scorrendo il dito oltre il bordo sinistro arretra di un giorno per
+  volta. Quando è arretrata l'etichetta diventa "Dal 13/8 al 19/8" e il grassetto di
+  "oggi" segue il giorno vero, non l'ultimo cerchio. Chiudere il giorno o cambiare
+  schermata la riporta su oggi.
 - **Niente stima AI degli alimenti.** C'era nella versione artifact, è stata tolta perché
   richiede una chiave API. Al suo posto c'è "Ricetta", che compone un piatto dagli
   ingredienti e lo salva come alimento riutilizzabile.
@@ -133,8 +138,10 @@ Non ribaltarle senza dirglielo esplicitamente.
   proposito: serve a confrontare i mesi con lo stesso metro. Se cambia il
   fabbisogno, cambia tutto lo storico.
 - **Sul quadrante si cambia giorno scorrendo il dito** (chiesto il 2026-08-22):
-  a destra il giorno prima, a sinistra quello dopo, **dentro i sette giorni della
-  striscia** — così dove sei è sempre segnato sotto, e oltre oggi non si va.
+  a destra il giorno prima, a sinistra quello dopo. Oltre oggi non si va, e indietro
+  si arriva **fino al primo giorno registrato** (i sette giorni della striscia si
+  aprono sempre, anche su un diario appena cominciato): `primoGiorno()`. La striscia
+  arretra insieme al giorno, così dove sei è sempre segnato sotto.
   Il gesto vale **solo sul quadrante**, non su tutta la pagina: più in basso ci sono
   elenchi e pulsanti, e un dito storto lì avrebbe cambiato giorno per sbaglio.
   Sono eventi `pointer`, non `touch`: valgono anche col mouse, e il browser manda
@@ -143,8 +150,17 @@ Non ribaltarle senza dirglielo esplicitamente.
   `.quadrante`, altrimenti lo scorrimento verticale se lo prende tutto il browser
   e quello orizzontale non arriva mai. Soglie: 50 px di corsa, meno di 40 px di
   deriva verticale.
-  Per andare più indietro di sette giorni c'è lo Storico: la striscia è ancorata a
-  oggi, non è una finestra che scorre.
+  **Serve anche `user-select:none` sul `.quadrante`**: senza, un dito che parte sopra
+  un numero fa partire il trascinamento del testo, il browser manda `pointercancel` e
+  il giorno non cambia. Capitava solo su certi giorni — dove al centro del quadrante
+  cadeva una scritta invece del disegno — cioè il difetto peggiore, quello che sembra
+  un capriccio dell'app.
+- **Niente istruzioni scritte sotto i cerchi** (chiesto il 2026-08-22). Sono stati
+  tolti l'invito "Tocca un giorno... oppure scorri con il dito" sotto la striscia e
+  tutto il paragrafo che spiegava il cerchio del grasso e le 7700 kcal. Sotto la
+  striscia resta solo la media di calorie e proteine. Chi usa l'app tutti i giorni
+  quelle spiegazioni le ha già lette: non riaggiungerle per rendere una funzione
+  nuova "scopribile", diglielo qui in chat invece.
 - **Il salvataggio è ritardato di 500 ms** per non riscrivere a ogni tocco, e viene
   forzato su `pagehide` e `visibilitychange`. Senza quel recupero, una voce
   registrata e seguita dalla chiusura immediata dell'app andrebbe persa.
@@ -186,7 +202,7 @@ Non aggiungere ombre, sfumature o animazioni decorative.
 
 ## Prima di chiudere una sessione
 
-1. **Alza il numero di versione della cache in `sw.js`** (`diario-v13` → `diario-v14`).
+1. **Alza il numero di versione della cache in `sw.js`** (`diario-v14` → `diario-v15`).
    Dal 2026-08-18 il service worker chiede la pagina prima alla rete, quindi una
    versione nuova arriva con un ricaricamento solo; il numero di cache va alzato
    lo stesso, governa la copia di riserva usata offline.
