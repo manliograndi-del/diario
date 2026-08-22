@@ -131,21 +131,16 @@ Non ribaltarle senza dirglielo esplicitamente.
   **Per la stessa ragione la riga "Giorno passato / torna a oggi" dentro il quadrante
   c'è anche su oggi**, dove porta solo l'etichetta "Oggi": se comparisse soltanto sui
   giorni passati, i cerchi scenderebbero di quaranta pixel a ogni scorrimento.
-- **Il cambio giorno ha una transizione** (chiesta il 2026-08-22): testata e corpo
-  entrano dal lato da cui arrivi, 0,36 s (`da-destra` / `da-sinistra`, `S.anima`,
-  azzerata subito dopo il disegno perché un ridisegno qualsiasi non la rifaccia).
-  Vale sia per il dito sia per il tocco sulla striscia e su "torna a oggi", ma non
-  nello Storico, dove si apre una scheda dentro la pagina e non si cambia pagina.
-  **Era 0,24 s da `opacity:.25` e Manlio l'ha vista come "un salto"**: la pagina
-  nuova si leggeva già ferma nel posto sbagliato e poi scattava a posto. Rallentata
-  e resa quasi invisibile all'inizio (`.06`), quello che si nota è il movimento. Se
-  la ritocchi ancora, muovi questi due numeri insieme: più è veloce, più deve
-  partire trasparente. Conta anche la curva: un ease-out secco arriva a metà
-  tempo e poi striscia, che è di nuovo uno scatto; `cubic-bezier(.4,0,.2,1)`
-  distribuisce il movimento.
-  **Non è il dito che trascina la pagina**: per quello servirebbero due schermate
-  disegnate insieme, e l'app ne disegna una sola per volta — è la scelta che la tiene
-  semplice. Se lo chiede, digli che costa quello.
+- **Il cambio giorno non ha nessuna transizione**: il giorno nuovo compare e basta.
+  Una ce n'era, chiesta e tolta lo stesso giorno (2026-08-22). Provata a 0,24 s e poi
+  a 0,36 s, con partenza quasi invisibile e la curva che distribuisce il movimento:
+  a Manlio sembrava un salto in tutte le versioni. **Non rimetterla se non la chiede
+  lui**, e se la chiede sappi che il problema non era la velocità.
+  Il motivo di fondo: l'app disegna **una schermata per volta**, quindi la pagina
+  nuova appare per forza già al suo posto e può solo scivolarci dentro. Una
+  transizione che convince davvero è quella in cui il dito trascina la pagina vecchia
+  mentre arriva la nuova, e vuole due schermate disegnate insieme — un'altra
+  architettura, non un ritocco. Se lo chiede, digli che costa quello.
 - **Lo Storico si apre sul mese** (chiesto il 2026-08-21). Calendario del mese con i
   giorni registrati toccabili, una lineetta colorata sotto il numero — verde sotto
   l'obiettivo, blu in deficit, rossa sopra il fabbisogno — e sotto i totali: grammi
@@ -226,7 +221,7 @@ Non aggiungere ombre, sfumature o animazioni decorative.
 
 ## Prima di chiudere una sessione
 
-1. **Alza il numero di versione della cache in `sw.js`** (`diario-v16` → `diario-v17`).
+1. **Alza il numero di versione della cache in `sw.js`** (`diario-v17` → `diario-v18`).
    Dal 2026-08-18 il service worker chiede la pagina prima alla rete, quindi una
    versione nuova arriva con un ricaricamento solo; il numero di cache va alzato
    lo stesso, governa la copia di riserva usata offline.

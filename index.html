@@ -252,23 +252,10 @@ button.sg{padding:2px 0}
 .sc-gruppo{margin-top:12px}
 .sc-vuoto{font-size:13.5px;color:var(--tenue);line-height:1.55;margin-top:11px}
 
-/* Il cambio giorno: la schermata nuova entra dal lato da cui è arrivata.
-   Non è il dito che trascina la pagina — per quello servirebbero due schermate
-   disegnate insieme — ma il verso del movimento è quello giusto e costa un
-   pugno di righe. */
-/* Tempi: 0,24 s partendo da opacity .25 sembrava un salto — la pagina nuova
-   si vedeva già ferma nel posto sbagliato e poi scattava. Più lenta e molto
-   più trasparente all'inizio: nei primi fotogrammi non si legge dove sta, e
-   quello che si nota è il movimento invece dello scatto.
-   Conta anche la curva: con un ease-out secco a metà tempo era già arrivata e
-   il resto era coda, cioè di nuovo uno scatto. Questa parte piano, si muove nel
-   mezzo e si posa: a 90 ms è ancora indietro di 30 px e quasi invisibile. */
-@keyframes entra-da-destra{from{opacity:.06;transform:translateX(38px)}to{opacity:1;transform:none}}
-@keyframes entra-da-sinistra{from{opacity:.06;transform:translateX(-38px)}to{opacity:1;transform:none}}
-.da-destra{animation:entra-da-destra .36s cubic-bezier(.4,0,.2,1)}
-.da-sinistra{animation:entra-da-sinistra .36s cubic-bezier(.4,0,.2,1)}
-
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* Qui c'era la transizione del cambio giorno, provata il 2026-08-22 e tolta lo
+   stesso giorno: a Manlio sembrava un salto anche rallentata. Il giorno nuovo
+   compare e basta. Non rimetterla senza che la chieda lui. */
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
@@ -400,7 +387,7 @@ function scrivi(k,v){
 /* ---------- stato ---------- */
 var S={
   vista:"oggi", data:oggiISO(), voci:[], indice:{}, ob:OB_DEF, miei:[], recenti:[], tema:"auto", fabV:FAB_V,
-  mese:null, apertoDove:"lista", finestra:null, anima:null,
+  mese:null, apertoDove:"lista", finestra:null,
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
   aperto:null, apertoVoci:[], export:"", importa:"", msg:null, spia:"", focus:null
@@ -543,7 +530,7 @@ function render(){
     titolo="Storico"; lato=ng?(ng+(ng===1?" giorno registrato":" giorni registrati")):"";
   }
   else { titolo="Impostazioni"; lato=""; }
-  h+='<header class="testata'+(S.anima?" "+S.anima:"")+'"><div class="testata-riga"><div>'+
+  h+='<header class="testata"><div class="testata-riga"><div>'+
      '<div class="occhiello">Diario</div>'+
      '<h1 class="data-titolo">'+titolo+
      (lato?'<span class="titolo-lato">'+lato+'</span>':"")+'</h1></div>'+
@@ -551,7 +538,7 @@ function render(){
 
   if(S.msg) h+='<div class="avviso" data-az="chiudi-msg">'+esc(S.msg)+' <span class="avviso-x">chiudi</span></div>';
 
-  h+='<main class="corpo'+(S.anima?" "+S.anima:"")+'">';
+  h+='<main class="corpo">';
   if(S.vista==="oggi") h+=vistaOggi();
   else if(S.vista==="aggiungi") h+=vistaAggiungi();
   else if(S.vista==="storico") h+=vistaStorico();
@@ -566,7 +553,6 @@ function render(){
   h+='</nav>';
 
   document.getElementById("app").innerHTML=h;
-  S.anima=null;   /* vale per questo disegno soltanto: un ridisegno qualsiasi non deve rifarla */
   aggiornaSpia();
   if(S.focus){
     var e=document.querySelector('[data-in="'+S.focus+'"]');
@@ -1164,12 +1150,6 @@ document.getElementById("app").addEventListener("click",function(ev){
     /* Lo stesso giorno compare nel calendario e nell'elenco sotto: senza
        sapere da dove è stato toccato, la scheda si aprirebbe in due posti. */
     var chiude=(S.aperto===d&&S.apertoDove===dove);
-    /* Nella schermata di oggi il giorno cambia scorrendo o toccando la
-       striscia: in tutti e due i casi la pagina entra dal verso giusto. */
-    if(S.vista==="oggi"){
-      var prima=S.aperto||oggiISO(), dopo=chiude?oggiISO():d;
-      S.anima=(dopo>prima)?"da-destra":(dopo<prima?"da-sinistra":null);
-    }
     /* Chiudere il giorno vuol dire tornare a oggi: la striscia, se era
        arretrata, torna a finire su oggi insieme al resto. */
     if(chiude){S.aperto=null;S.finestra=null;}
@@ -1198,7 +1178,6 @@ function giornoScorri(n){
   if(iso>fine) fine=iso;
   else if(iso<isoSposta(fine,-6)) fine=isoSposta(iso,6);
   S.finestra=(fine>=oggi)?null:fine;
-  S.anima=(n>0)?"da-destra":"da-sinistra";
   if(iso===oggi){ S.aperto=null; }
   else { S.aperto=iso; S.apertoDove="lista"; S.apertoVoci=(leggi(K_G+iso,{voci:[]}).voci)||[]; }
   render();
