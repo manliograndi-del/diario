@@ -15,9 +15,32 @@ Conseguenze operative:
   Impostazioni.
 - Scrivi in italiano.
 - **Pubblica da solo su `main` senza richiedere il permesso ogni volta** (autorizzato
-  il 2026-08-18). Il ramo di lavoro non gli serve a niente: lui vede solo il sito
-  pubblicato. Restano validi gli obblighi di sempre: provare prima di pubblicare,
-  alzare la versione della cache, e dirgli in italiano cosa cambia per lui.
+  il 2026-08-18, confermato il 2026-08-22). Il ramo di lavoro non gli serve a niente:
+  lui vede solo il sito pubblicato. Restano validi gli obblighi di sempre: provare
+  prima di pubblicare, alzare la versione della cache, e dirgli in italiano cosa
+  cambia per lui.
+- **Fermalo prima solo per le cose grosse.** Regola sua, scelta il 2026-08-22 fra tre
+  possibili. Tre cassetti, e lui vuole sapere in quale sta la sua richiesta:
+  - *gratis* — testi, colori, numeri, alimenti nuovi, statistiche calcolate da dati
+    che ci sono già, correzioni di difetti. Falle e raccontagliele dopo.
+  - *costa* — gesti nuovi, schermate nuove, tutto ciò che cambia **come sono scritti
+    i dati salvati**. Fattibile, ma digli prima quanto aggiunge e cosa rischia.
+  - *cambia l'app* — sincronizzazione fra dispositivi, accesso con password,
+    notifiche, riconoscere il cibo da una foto. Non sono difficili: sono un'altra
+    cosa, e romperebbero il patto di adesso (niente rete, niente account, niente
+    chiavi). Presentagliele come una decisione, non come una modifica.
+  Non dirgli mai di no perché "è complicato" da fare: diglielo solo quando il conto
+  lo paga lui, in un'app più lenta, più fragile o più difficile da usare. E in quel
+  caso proponigli sempre la versione piccola della stessa idea.
+- **Non riscrivere l'app da zero** (valutato insieme il 2026-08-22 e scartato). Con
+  questi vincoli — un file, niente librerie, dati sul telefono — una riscrittura
+  ridarebbe quasi la stessa app, ma perderebbe le decisioni pagate con l'uso, che
+  stanno qui sotto e non in un elenco di funzioni: il gradiente non monotòno, tutti
+  i cerchi della striscia che rispondono, `user-select` sul quadrante, la conversione
+  del fabbisogno che non tocca un numero scelto a mano, la transizione già provata e
+  tolta. E metterebbe a rischio l'unica cosa irreversibile: il diario sul suo
+  telefono, che non esiste da nessun'altra parte. Riscrivere avrà senso solo il
+  giorno in cui la forma attuale gli impedisce davvero qualcosa che vuole.
 
 ## Cos'è
 
