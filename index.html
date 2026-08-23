@@ -11,16 +11,14 @@
 <meta name="apple-mobile-web-app-title" content="Diario">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
-@font-face{font-family:'X';src:local('Helvetica')}
 :root{
   --carta:#E9ECE6; --superficie:#FFFFFF; --inchiostro:#141B18; --tenue:#5B6661;
   --linea:#CDD3CB; --blu:#1F4A6B; --senape:#C08411; --rosso:#A3341F; --verde:#2E6B4F;
   /* su-inchiostro: il testo sopra i fondi color inchiostro. Nel tema scuro
      l'inchiostro diventa chiaro, quindi questo deve diventare scuro. */
   --su-inchiostro:#F2F5F1;
-  --traccia:#E4E8E1;      /* il grigio delle piste vuote: anelli, nastri, blocchi */
+  --traccia:#E4E8E1;      /* il grigio delle piste vuote: anelli e nastri */
   --neutro:#7A8A84;       /* le barrette dei macro */
-  --linea-prot:#B9C2B8;
   --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
   --testo:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
 }
@@ -33,7 +31,6 @@
   --su-inchiostro:#121614;
   --traccia:#2A322F;
   --neutro:#6E7C77;
-  --linea-prot:#3A4642;
 }
 html{background:var(--carta)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -80,12 +77,6 @@ input,textarea{font-family:inherit}
 .cifra-m{font-size:22px;font-weight:700;margin:6px 0 9px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .unita{font-weight:400;font-size:13px;color:var(--tenue);letter-spacing:0}
 .rossa{color:var(--rosso)}
-
-/* blocchi proteine */
-.pannello.prot{border-color:var(--linea-prot)}
-.blocchi{display:flex;gap:3px;margin-top:15px;height:46px}
-.blocco{flex:1;background:var(--traccia);border:1px solid var(--linea);border-radius:1px;display:flex;align-items:flex-end;overflow:hidden;min-width:0}
-.blocco i{display:block;width:100%;background:var(--senape);transition:height .35s cubic-bezier(.2,.7,.3,1)}
 
 .nastro{height:9px;background:var(--traccia);border:1px solid var(--linea);border-radius:1px;margin-top:14px;overflow:hidden}
 .nastro.sottile{height:6px;margin-top:4px}
@@ -194,7 +185,6 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 .gg-m{font-family:var(--mono);font-size:10.5px;color:var(--tenue);margin-top:3px}
 .gg-k{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .dett{padding:9px 2px 13px}
-.dett-v{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--tenue);padding:4px 0}
 
 /* navigazione */
 .barra{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--superficie);border-top:1px solid var(--linea);max-width:560px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom);z-index:10}
@@ -395,7 +385,7 @@ function scrivi(k,v){
 
 /* ---------- stato ---------- */
 var S={
-  vista:"oggi", data:oggiISO(), voci:[], indice:{}, ob:OB_DEF, miei:[], recenti:[], tema:"auto", fabV:FAB_V,
+  vista:"oggi", data:oggiISO(), voci:[], indice:{}, ob:OB_DEF, miei:[], recenti:[], tema:"auto",
   mese:null, apertoDove:"lista", finestra:null,
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
@@ -1174,8 +1164,8 @@ document.getElementById("app").addEventListener("click",function(ev){
 });
 
 /* Scorrendo il dito sul quadrante si cambia giorno: a sinistra il giorno dopo,
-   a destra quello prima, dentro i sette giorni della striscia. Oltre oggi non si
-   va — un domani da leggere non c'è — e più indietro c'è lo Storico.
+   a destra quello prima. Oltre oggi non si va — un domani da leggere non c'è — e
+   indietro si arriva fino al primo giorno registrato, con la striscia che segue.
    Sono eventi "pointer" e non "touch" apposta: funzionano anche col mouse, e il
    browser manda pointercancel appena decide che quel dito sta scorrendo la
    pagina, così un movimento verticale non fa mai cambiare giorno per sbaglio. */

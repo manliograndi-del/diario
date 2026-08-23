@@ -243,7 +243,7 @@ Palette (variabili CSS in `:root`, usale, non inventare colori):
 `--rosso #A3341F` · `--verde #2E6B4F` (aggiunto davvero il 2026-08-21: prima il
 verde esisteva solo dentro `coloreGrassi()` e questo file lo dava per scontato)
 Più `--su-inchiostro` (il testo sopra i fondi color inchiostro), `--traccia` (le piste
-vuote di anelli e nastri), `--neutro`, `--linea-prot`. Servono al tema scuro: se scrivi
+vuote di anelli e nastri), `--neutro`. Servono al tema scuro: se scrivi
 un colore fisso invece di una variabile, di notte diventa illeggibile.
 
 Angoli quasi vivi (3px), pannelli bianchi bordati su fondo grigio-verde, numeri
@@ -252,13 +252,28 @@ Non aggiungere ombre, sfumature o animazioni decorative.
 
 ## Prima di chiudere una sessione
 
-1. **Alza il numero di versione della cache in `sw.js`** (`diario-v18` → `diario-v19`).
+1. **Alza il numero di versione della cache in `sw.js`** (`diario-v19` → `diario-v20`).
    Dal 2026-08-18 il service worker chiede la pagina prima alla rete, quindi una
    versione nuova arriva con un ricaricamento solo; il numero di cache va alzato
    lo stesso, governa la copia di riserva usata offline.
 2. Verifica che l'app si apra e che una voce registrata sopravviva a un ricaricamento.
 3. Digli **in italiano e senza gergo** cosa vedrà di diverso, e che deve ricaricare
    due volte perché il service worker si aggiorni.
+
+## Pulizie già fatte
+
+**2026-08-22, rilettura completa del file** cercando roba morta. Tolti: un
+`@font-face` di un carattere che nessuno usava, il disegno dei "blocchi proteine"
+di una versione vecchia (`.pannello.prot`, `.blocchi`, `.blocco`) con la variabile
+`--linea-prot` che serviva solo a quello, la classe `.dett-v`, e il campo `fabV`
+nello stato — la versione la scrive `salvaCfg()` leggendo la costante, in memoria
+non serviva. Corretto un commento che diceva ancora che lo scorrimento si fermava
+ai sette giorni. Undici righe in meno, niente di visibile cambiato.
+
+Controllato anche il resto: nessuna classe CSS senza usi, nessuna variabile di
+colore orfana, nessuna funzione mai chiamata, nessun pezzo di stato mai letto.
+Se rifai questo giro, il modo è confrontare i selettori dichiarati nello `<style>`
+con le stringhe di classe scritte nel JavaScript.
 
 ## File del repo
 
