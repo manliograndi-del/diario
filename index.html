@@ -387,7 +387,7 @@ function scrivi(k,v){
 var S={
   vista:"oggi", data:oggiISO(), voci:[], indice:{}, ob:OB_DEF, miei:[], recenti:[], tema:"auto",
   mese:null, apertoDove:"lista", finestra:null,
-  drive:{on:false,id:null,ultimo:null}, driveStato:"",
+  drive:{on:false,id:null,ultimo:null,rev:null}, driveStato:"",
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
   aperto:null, apertoVoci:[], export:"", importa:"", msg:null, spia:"", focus:null
@@ -396,7 +396,7 @@ var S={
 function avvia(){
   var cfg=leggi(K_CFG,null);
   if(cfg){ S.ob=Object.assign({},OB_DEF,cfg.ob||{}); S.miei=cfg.miei||[]; S.recenti=cfg.recenti||[];
-           if(cfg.drive) S.drive=Object.assign({on:false,id:null,ultimo:null},cfg.drive);
+           if(cfg.drive) S.drive=Object.assign({on:false,id:null,ultimo:null,rev:null},cfg.drive);
            if(cfg.tema==="chiaro"||cfg.tema==="scuro"||cfg.tema==="auto") S.tema=cfg.tema;
            if(!(Number(cfg.fabV)>=FAB_V)){
              if(S.ob.fab===FAB_VECCHIO) S.ob.fab=FAB_NUOVO;
@@ -1100,6 +1100,7 @@ function vistaImpostazioni(){
   if(S.driveStato==="vuoto")    h+='<div class="errore">Su Drive non c\'è ancora nessuna copia.</div>';
   if(S.driveStato==="riprendi") h+='<div class="errore">Su Drive c\'è una copia, ma <strong>qui il diario è vuoto</strong>: non l\'ho sovrascritta. Tocca "Riprendi il diario da Drive".</div>';
   if(S.driveStato==="quivuoto") h+='<div class="nota">Collegato. Il diario è ancora vuoto: la prima copia partirà appena registri qualcosa.</div>';
+  if(S.driveStato==="altrove")  h+='<div class="errore">Su Drive c\'è una copia <strong>più nuova di questa</strong>, fatta da un altro dispositivo. Non l\'ho toccata. Se quella giusta è là, tocca "Riprendi il diario da Drive"; se la più giusta è questa, scollega e ricollega.</div>';
   if(S.driveStato==="permesso") h+='<div class="errore">Permesso non dato o scaduto. Tocca "Collega Google Drive" e conferma.</div>';
   if(S.driveStato==="errore")   h+='<div class="errore">Google ha risposto male. Riprova fra un momento.</div>';
   h+='</section>';
@@ -1371,15 +1372,20 @@ function driveCerca(tok){
     .then(function(d){ return (d.files&&d.files[0])?d.files[0].id:null; });
 }
 function driveScrivi(tok,id,testo){
-  if(id) return chiamaDrive(tok,"https://www.googleapis.com/upload/drive/v3/files/"+id+"?uploadType=media",
-      {method:"PATCH",headers:{"Content-Type":"application/json"},body:testo}).then(function(){ return id; });
+  if(id) return chiamaDrive(tok,"https://www.googleapis.com/upload/drive/v3/files/"+id+"?uploadType=media&fields=id,modifiedTime",
+      {method:"PATCH",headers:{"Content-Type":"application/json"},body:testo})
+      .then(function(r){ return r.json(); }).then(function(d){ return {id:id,rev:d.modifiedTime}; });
   var linea="-diario-"+Date.now();
   var corpo="--"+linea+"\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"+
             JSON.stringify({name:DRIVE_NOME,mimeType:"application/json"})+
             "\r\n--"+linea+"\r\nContent-Type: application/json\r\n\r\n"+testo+"\r\n--"+linea+"--";
-  return chiamaDrive(tok,"https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
+  return chiamaDrive(tok,"https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime",
       {method:"POST",headers:{"Content-Type":"multipart/related; boundary="+linea},body:corpo})
-    .then(function(r){ return r.json(); }).then(function(d){ return d.id; });
+    .then(function(r){ return r.json(); }).then(function(d){ return {id:d.id,rev:d.modifiedTime}; });
+}
+function driveQuandoTocca(tok,id){
+  return chiamaDrive(tok,"https://www.googleapis.com/drive/v3/files/"+id+"?fields=modifiedTime")
+    .then(function(r){ return r.json(); }).then(function(d){ return d.modifiedTime; });
 }
 function driveLeggi(tok,id){
   return chiamaDrive(tok,"https://www.googleapis.com/drive/v3/files/"+id+"?alt=media").then(function(r){ return r.text(); });
@@ -1409,7 +1415,16 @@ function driveSalva(interattivo){
       var p=S.drive.id?Promise.resolve(S.drive.id):driveCerca(tok);
       return p.then(function(id){
         if(diarioVuoto()){ return {fermo:true, id:id}; }
-        return driveScrivi(tok,id,JSON.stringify(raccogli())).then(function(nuovo){ return {id:nuovo}; });
+        if(!id) return driveScrivi(tok,null,JSON.stringify(raccogli()));
+        /* Chi ha toccato quel file per ultimo? Se non siamo stati noi, di là c'è
+           roba più nuova — un altro dispositivo — e sovrascriverla la
+           cancellerebbe in silenzio. Meglio fermarsi e dirglielo.
+           `rev` mancante = copia fatta prima di questo controllo: la si accetta
+           una volta sola e da lì in poi il segnaposto c'è. */
+        return driveQuandoTocca(tok,id).then(function(rev){
+          if(S.drive.rev&&rev&&rev!==S.drive.rev) return {fermo:true, id:id, altrove:true};
+          return driveScrivi(tok,id,JSON.stringify(raccogli()));
+        });
       });
     });
   }
@@ -1419,8 +1434,8 @@ function driveSalva(interattivo){
     throw e;
   }).then(function(r){
     S.drive.on=true; S.drive.id=r.id||S.drive.id;
-    if(r.fermo){ S.driveStato=r.id?"riprendi":"quivuoto"; }
-    else { S.drive.ultimo=Date.now(); S.driveStato="fatto"; }
+    if(r.fermo){ S.driveStato=r.altrove?"altrove":(r.id?"riprendi":"quivuoto"); }
+    else { S.drive.rev=r.rev||null; S.drive.ultimo=Date.now(); S.driveStato="fatto"; }
     salvaCfg(); if(S.vista==="impostazioni") render();
   }).catch(function(e){
     S.driveStato=(e.tipo==="permesso"||e.tipo==="scaduto")?"permesso":(e.tipo==="rete"?"rete":"errore");
@@ -1438,7 +1453,10 @@ function driveRiprendi(){
     return p.then(function(id){
       if(!id) throw erroreDrive("vuoto");
       S.drive.id=id;
-      return driveLeggi(tok,id);
+      return driveQuandoTocca(tok,id).then(function(rev){
+        S.drive.rev=rev||null; S.drive.on=true; salvaCfg();
+        return driveLeggi(tok,id);
+      });
     });
   }).then(function(testo){
     S.driveStato=""; S.importa=testo; ripristina();
@@ -1449,7 +1467,7 @@ function driveRiprendi(){
 }
 function driveScollega(){
   try{ if(GTOK&&window.google&&google.accounts&&google.accounts.oauth2) google.accounts.oauth2.revoke(GTOK); }catch(e){}
-  GTOK=null; S.drive={on:false,id:null,ultimo:null}; S.driveStato="";
+  GTOK=null; S.drive={on:false,id:null,ultimo:null,rev:null}; S.driveStato="";
   salvaCfg(); render();
 }
 /* Dopo una voce nuova aspettiamo un minuto prima di risalire su Drive: se sta
