@@ -229,11 +229,21 @@ Non ribaltarle senza dirglielo esplicitamente.
   backup finisce nel **suo** Drive. Da un altro dispositivo: "Riprendi il diario da
   Drive", che passa dalla stessa strada del ripristino da file — esiste **un solo**
   modo di rimettere dentro i dati, ed è già collaudato.
-  **La regola da non togliere mai: se qui il diario è vuoto, non si scrive su Drive.**
+  **Due regole da non togliere mai.**
+  La prima: **se qui il diario è vuoto, non si scrive su Drive.**
   Il caso da temere è telefono nuovo + lui che tocca "Collega" per primo: senza quel
   blocco il vuoto di qui cancellerebbe la copia buona di là, e non resterebbe nessun
   posto da cui riprenderla. In quel caso ci si collega e gli si dice di premere
   "Riprendi". Provato apposta.
+  La seconda: **non si sovrascrive una copia toccata da qualcun altro.** Prima di
+  scrivere si chiede a Drive quando è stato modificato il file e lo si confronta con
+  `S.drive.rev`, il segnaposto lasciato dalla nostra ultima scrittura o lettura. Se non
+  combaciano, di là c'è roba più nuova — un altro dispositivo — e sovrascriverla la
+  cancellerebbe in silenzio: ci si ferma e glielo si dice. `rev` assente (copie fatte
+  prima di questo controllo) si accetta una volta sola. È anche la ragione per cui
+  "scollega e ricollega" funziona come via d'uscita: azzerando `rev` la prossima
+  scrittura passa. Questo è quanto di più vicino a una sincronia esiste oggi: **non
+  fonde niente**, evita solo che un dispositivo cancelli l'altro.
   Il permesso è `drive.file`: l'app tocca **solo il file che ha creato lei**, del resto
   del Drive non vede niente. **Non allargarlo**: è la ragione per cui Google non
   pretende di esaminare l'app e non compare la schermata di avviso.
