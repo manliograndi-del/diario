@@ -60,6 +60,11 @@ il vecchio indirizzo con la D maiuscola non vale più).
 3. **Nessuna dipendenza esterna a runtime.** Niente CDN, niente Google Fonts, niente
    chiamate di rete. L'app deve funzionare in aereo. I caratteri sono quelli di sistema
    apposta.
+   **Unica eccezione, dal 2026-08-23:** la libreria di Google per il permesso di Drive.
+   Si carica **solo quando lui tocca "Collega Google Drive"** o quando la copia
+   automatica parte a app già avviata — **mai all'avvio**, mai come dipendenza della
+   pagina. Se non c'è rete fallisce in silenzio e il Diario funziona come sempre.
+   Provato: ad app aperta senza collegamento, le chiamate di rete sono zero.
 4. **Nessuna chiave API.** Il repo è pubblico.
 5. **Mobile prima di tutto.** Larghezza massima 560 px, aree toccabili grandi, si usa
    con una mano in cucina o al ristorante.
@@ -68,7 +73,10 @@ il vecchio indirizzo con la D maiuscola non vale più).
 
 `localStorage`, con questi prefissi:
 
-- `diario.config` → `{ob:{kcal,fab,p,c,g}, miei:[...], recenti:[...], tema, fabV}`
+- `diario.config` → `{ob:{kcal,fab,p,c,g}, miei:[...], recenti:[...], tema, fabV, drive}`
+  `drive` è `{on, id, ultimo}`: collegato o no, l'identificativo del file su Drive e
+  quando è partita l'ultima copia. **Il permesso di Google non si salva mai**: vive in
+  memoria (`GTOK`), dura un'ora e si richiede quando serve.
 - `diario.indice` → `{"2026-08-17": {kcal,p,c,g,n}, ...}` — riepiloghi per lo storico
 - `diario.g.YYYY-MM-DD` → `{voci:[...], totali:{...}}` — un file per giorno
 
@@ -214,7 +222,38 @@ Non ribaltarle senza dirglielo esplicitamente.
 - **Il salvataggio è ritardato di 500 ms** per non riscrivere a ogni tocco, e viene
   forzato su `pagehide` e `visibilitychange`. Senza quel recupero, una voce
   registrata e seguita dalla chiusura immediata dell'app andrebbe persa.
-- **Sincronizzazione fra dispositivi: chiesta il 2026-08-18, rimandata da lui.**
+- **Copia di sicurezza su Google Drive** (fatta il 2026-08-23, dopo che lui aveva
+  chiesto di mettere il diario nel calendario per non perderlo — cosa impossibile: una
+  pagina web non gira quando è chiusa, e i dati stanno solo sul suo telefono).
+  Quando apre il Diario, e un minuto dopo ogni registrazione, il file completo del
+  backup finisce nel **suo** Drive. Da un altro dispositivo: "Riprendi il diario da
+  Drive", che passa dalla stessa strada del ripristino da file — esiste **un solo**
+  modo di rimettere dentro i dati, ed è già collaudato.
+  **La regola da non togliere mai: se qui il diario è vuoto, non si scrive su Drive.**
+  Il caso da temere è telefono nuovo + lui che tocca "Collega" per primo: senza quel
+  blocco il vuoto di qui cancellerebbe la copia buona di là, e non resterebbe nessun
+  posto da cui riprenderla. In quel caso ci si collega e gli si dice di premere
+  "Riprendi". Provato apposta.
+  Il permesso è `drive.file`: l'app tocca **solo il file che ha creato lei**, del resto
+  del Drive non vede niente. **Non allargarlo**: è la ragione per cui Google non
+  pretende di esaminare l'app e non compare la schermata di avviso.
+  L'identificativo del client sta in chiaro in `index.html` e **non è una chiave
+  segreta**: negli schemi da browser è pubblico per definizione, e vale solo se
+  chiamato dall'indirizzo autorizzato (`https://manliograndi-del.github.io`). La
+  password del client (`client secret`) **non si usa e non deve entrare nel repo**.
+  L'app di Google resta in stato "Testing" con lui come unico test user: pubblicarla
+  avrebbe richiesto home page e informativa privacy, che il Diario non ha. Per le app
+  che vivono nel browser non cambia niente — la scadenza dei 7 giorni riguarda i
+  permessi a lunga durata dei programmi sui server, non questi.
+  In `sw.js` c'è una riga che fa **ignorare al service worker tutto ciò che non è del
+  nostro indirizzo**: senza, una chiamata a Google andata storta si sarebbe presa in
+  cambio la pagina dell'app, e il codice avrebbe letto HTML al posto della risposta.
+- **Sincronizzazione a due sensi: ancora da fare.** Chiesta il 2026-08-18, rimandata,
+  e il 2026-08-22 abbiamo scelto di partire dalla sola copia di sicurezza — l'80% di
+  quello che gli serve senza il problema di decidere chi vince quando due dispositivi
+  hanno scritto lo stesso giorno. Se si riprende il discorso, la regola semplice e
+  onesta è "l'ultima versione di quel giorno vince".
+- **Note di allora sulla sincronizzazione:**
   Vuole ritrovare il diario ovunque si colleghi. Richiede un server e un accesso con
   password: fattibile e gratuito a questi volumi, ma la configurazione su un pannello
   esterno tocca a lui, e quel tipo di navigazione gli costa fatica. Se si riprende il
@@ -252,7 +291,7 @@ Non aggiungere ombre, sfumature o animazioni decorative.
 
 ## Prima di chiudere una sessione
 
-1. **Alza il numero di versione della cache in `sw.js`** (`diario-v19` → `diario-v20`).
+1. **Alza il numero di versione della cache in `sw.js`** (`diario-v20` → `diario-v21`).
    Dal 2026-08-18 il service worker chiede la pagina prima alla rete, quindi una
    versione nuova arriva con un ricaricamento solo; il numero di cache va alzato
    lo stesso, governa la copia di riserva usata offline.

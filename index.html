@@ -387,6 +387,7 @@ function scrivi(k,v){
 var S={
   vista:"oggi", data:oggiISO(), voci:[], indice:{}, ob:OB_DEF, miei:[], recenti:[], tema:"auto",
   mese:null, apertoDove:"lista", finestra:null,
+  drive:{on:false,id:null,ultimo:null}, driveStato:"",
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
   aperto:null, apertoVoci:[], export:"", importa:"", msg:null, spia:"", focus:null
@@ -395,6 +396,7 @@ var S={
 function avvia(){
   var cfg=leggi(K_CFG,null);
   if(cfg){ S.ob=Object.assign({},OB_DEF,cfg.ob||{}); S.miei=cfg.miei||[]; S.recenti=cfg.recenti||[];
+           if(cfg.drive) S.drive=Object.assign({on:false,id:null,ultimo:null},cfg.drive);
            if(cfg.tema==="chiaro"||cfg.tema==="scuro"||cfg.tema==="auto") S.tema=cfg.tema;
            if(!(Number(cfg.fabV)>=FAB_V)){
              if(S.ob.fab===FAB_VECCHIO) S.ob.fab=FAB_NUOVO;
@@ -408,7 +410,7 @@ function avvia(){
   render();
 }
 
-function salvaCfg(){ scrivi(K_CFG,{ob:S.ob,miei:S.miei,recenti:S.recenti,tema:S.tema,fabV:FAB_V}); }
+function salvaCfg(){ scrivi(K_CFG,{ob:S.ob,miei:S.miei,recenti:S.recenti,tema:S.tema,fabV:FAB_V,drive:S.drive}); }
 
 function totali(v){
   return (v||S.voci).reduce(function(t,x){
@@ -433,6 +435,7 @@ function salva(){
     var ok=salvaOra();
     S.spia=ok?"fatto":"errore"; aggiornaSpia();
     setTimeout(function(){S.spia="";aggiornaSpia();},1600);
+    driveFraPoco();
   },500);
 }
 /* Il salvataggio aspetta mezzo secondo per non riscrivere a ogni tocco.
@@ -1081,6 +1084,26 @@ function vistaImpostazioni(){
      ORA_BUIO+' di sera alle '+ORA_LUCE+' del mattino, e torna chiaro da sé. I colori che contano '+
      '\u2014 blu le calorie, senape le proteine, verde e rosso il grasso — restano quelli anche al buio.</div></section>';
 
+  h+='<section class="pannello"><div class="etichetta">Copia su Google Drive</div>';
+  if(!S.drive.on){
+    h+='<div class="nota">Il diario si copia da solo nel tuo Google Drive, in un file che resta tuo e che puoi scaricare quando vuoi. Il permesso si dà una volta e riguarda <strong>solo quel file</strong>: del resto del tuo Drive l\'app non vede niente. Senza rete non cambia nulla, il Diario funziona come sempre.</div>'+
+       '<button class="b1" data-az="drive-collega">Collega Google Drive</button>';
+  } else {
+    h+='<div class="nota">Ultima copia: <strong>'+quandoSalvato(S.drive.ultimo)+'</strong>. Si rifà da sola quando apri il Diario e dopo che hai registrato qualcosa.</div>'+
+       '<button class="b1" data-az="drive-salva">Copia adesso</button>'+
+       '<button class="b2" data-az="drive-riprendi">Riprendi il diario da Drive</button>'+
+       '<button class="b2" data-az="drive-scollega">Scollega</button>';
+  }
+  if(S.driveStato==="corso")    h+='<div class="nota">Sto parlando con Google…</div>';
+  if(S.driveStato==="fatto")    h+='<div class="nota">Copia salvata su Drive.</div>';
+  if(S.driveStato==="rete")     h+='<div class="nota">Nessuna rete: riprovo da solo la prossima volta.</div>';
+  if(S.driveStato==="vuoto")    h+='<div class="errore">Su Drive non c\'è ancora nessuna copia.</div>';
+  if(S.driveStato==="riprendi") h+='<div class="errore">Su Drive c\'è una copia, ma <strong>qui il diario è vuoto</strong>: non l\'ho sovrascritta. Tocca "Riprendi il diario da Drive".</div>';
+  if(S.driveStato==="quivuoto") h+='<div class="nota">Collegato. Il diario è ancora vuoto: la prima copia partirà appena registri qualcosa.</div>';
+  if(S.driveStato==="permesso") h+='<div class="errore">Permesso non dato o scaduto. Tocca "Collega Google Drive" e conferma.</div>';
+  if(S.driveStato==="errore")   h+='<div class="errore">Google ha risposto male. Riprova fra un momento.</div>';
+  h+='</section>';
+
   h+='<section class="pannello"><div class="etichetta">Copia di sicurezza</div>'+
      '<div class="nota">'+Object.keys(S.indice).length+' giorni registrati. I dati stanno solo su questo dispositivo: se cancelli i dati del browser, spariscono. Scarica un file ogni tanto.</div>'+
      '<button class="b1" data-az="scarica">Scarica il file di backup</button>'+
@@ -1160,6 +1183,10 @@ document.getElementById("app").addEventListener("click",function(ev){
   else if(az==="togli-mio"){ var mid=b.getAttribute("data-id"); S.miei=S.miei.filter(function(m){return m.id!==mid;}); salvaCfg(); render(); }
   else if(az==="esporta"){ S.export=JSON.stringify(raccogli()); render(); }
   else if(az==="scarica"){ scaricaBackup(); }
+  else if(az==="drive-collega"){ driveSalva(true); }
+  else if(az==="drive-salva"){ driveSalva(true); }
+  else if(az==="drive-riprendi"){ driveRiprendi(); }
+  else if(az==="drive-scollega"){ driveScollega(); }
   else if(az==="importa"){ ripristina(); }
 });
 
@@ -1263,14 +1290,189 @@ function ripristina(){
     if(d.indice) scrivi(K_IDX,d.indice);
     /* Niente fabV qui apposta: un backup di prima del 2026-08-21 riporta il
        fabbisogno a 2500, e al riavvio la conversione lo rimette a 2200. */
-    if(d.ob||d.miei) scrivi(K_CFG,{ob:d.ob||S.ob,miei:d.miei||S.miei,recenti:S.recenti,tema:S.tema});
+    if(d.ob||d.miei) scrivi(K_CFG,{ob:d.ob||S.ob,miei:d.miei||S.miei,recenti:S.recenti,tema:S.tema,drive:S.drive});
     S.importa=""; S.msg="Ripristinato. Ricarico…";
     render(); setTimeout(function(){location.reload();},900);
   }catch(e){ S.msg="Quel testo non è un backup valido."; render(); }
 }
 
+/* ---------- copia di sicurezza su Google Drive ----------
+   Il diario vive solo dentro questo telefono: se si rompe, è finita. Qui la
+   copia va nel Drive di Manlio, in un file che lui vede e può scaricare.
+
+   Tre cose da non rovinare, in ordine di importanza:
+
+   1. **L'app deve continuare ad aprirsi senza rete.** Il pezzetto di Google
+      si scarica da Google, quindi si carica SOLO quando serve — mai all'avvio,
+      mai come dipendenza della pagina. Se la rete non c'è, qui fallisce tutto
+      in silenzio e il diario funziona come sempre.
+   2. **Il permesso vive solo in memoria** (`GTOK`): non finisce in
+      localStorage, scade da solo dopo un'ora e si richiede quando serve.
+   3. Il permesso chiesto è `drive.file`: l'app può toccare **soltanto il file
+      che ha creato lei**. Del resto del Drive non vede nemmeno l'esistenza.
+      Non allargare questo permesso: è la ragione per cui Google non pretende
+      di esaminare l'app. */
+var GOOGLE_ID="1065080427514-4ahoui2pq52jd74lvl6f9d5rbnpigc7h.apps.googleusercontent.com";
+var GOOGLE_AMBITO="https://www.googleapis.com/auth/drive.file";
+var DRIVE_NOME="diario-backup.json";
+var GTOK=null, gsi=null, clienteTok=null, attesaTok=null, tDrive=null;
+
+function caricaGsi(){
+  if(window.google&&window.google.accounts&&window.google.accounts.oauth2) return Promise.resolve();
+  if(gsi) return gsi;
+  gsi=new Promise(function(ok,no){
+    var e=document.createElement("script");
+    e.src="https://accounts.google.com/gsi/client"; e.async=true; e.defer=true;
+    e.onload=function(){ ok(); };
+    e.onerror=function(){ gsi=null; no(erroreDrive("rete")); };
+    document.head.appendChild(e);
+  });
+  return gsi;
+}
+function erroreDrive(tipo,stato){ var e=new Error(tipo); e.tipo=tipo; e.stato=stato||0; return e; }
+
+/* chiede il permesso: "interattivo" apre la finestra di Google, altrimenti
+   prova in silenzio e fallisce senza disturbare */
+function permessoDrive(interattivo){
+  if(GTOK) return Promise.resolve(GTOK);
+  return caricaGsi().then(function(){
+    if(!clienteTok){
+      clienteTok=google.accounts.oauth2.initTokenClient({
+        client_id:GOOGLE_ID, scope:GOOGLE_AMBITO,
+        callback:function(r){
+          var a=attesaTok; attesaTok=null;
+          if(r&&r.access_token){ GTOK=r.access_token; if(a) a.ok(GTOK); }
+          else if(a) a.no(erroreDrive("permesso"));
+        },
+        error_callback:function(){ var a=attesaTok; attesaTok=null; if(a) a.no(erroreDrive("permesso")); }
+      });
+    }
+    return new Promise(function(ok,no){
+      attesaTok={ok:ok,no:no};
+      try{ clienteTok.requestAccessToken({prompt:interattivo?"consent":""}); }
+      catch(e){ attesaTok=null; no(erroreDrive("permesso")); }
+    });
+  });
+}
+
+function chiamaDrive(tok,url,opz){
+  opz=opz||{}; opz.headers=opz.headers||{};
+  opz.headers.Authorization="Bearer "+tok;
+  return fetch(url,opz).then(function(r){
+    if(r.status===401||r.status===403) throw erroreDrive("scaduto",r.status);
+    if(!r.ok) throw erroreDrive("errore",r.status);
+    return r;
+  },function(){ throw erroreDrive("rete"); });
+}
+function driveCerca(tok){
+  var q="name='"+DRIVE_NOME+"' and trashed=false";
+  return chiamaDrive(tok,"https://www.googleapis.com/drive/v3/files?spaces=drive&pageSize=1&fields=files(id)&q="+encodeURIComponent(q))
+    .then(function(r){ return r.json(); })
+    .then(function(d){ return (d.files&&d.files[0])?d.files[0].id:null; });
+}
+function driveScrivi(tok,id,testo){
+  if(id) return chiamaDrive(tok,"https://www.googleapis.com/upload/drive/v3/files/"+id+"?uploadType=media",
+      {method:"PATCH",headers:{"Content-Type":"application/json"},body:testo}).then(function(){ return id; });
+  var linea="-diario-"+Date.now();
+  var corpo="--"+linea+"\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"+
+            JSON.stringify({name:DRIVE_NOME,mimeType:"application/json"})+
+            "\r\n--"+linea+"\r\nContent-Type: application/json\r\n\r\n"+testo+"\r\n--"+linea+"--";
+  return chiamaDrive(tok,"https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
+      {method:"POST",headers:{"Content-Type":"multipart/related; boundary="+linea},body:corpo})
+    .then(function(r){ return r.json(); }).then(function(d){ return d.id; });
+}
+function driveLeggi(tok,id){
+  return chiamaDrive(tok,"https://www.googleapis.com/drive/v3/files/"+id+"?alt=media").then(function(r){ return r.text(); });
+}
+
+/* Un diario vuoto non è una copia: è la mancanza di una copia. */
+function diarioVuoto(){ return Object.keys(S.indice).length===0&&S.voci.length===0; }
+
+/* Il salvataggio vero. "interattivo" è vero solo quando è stato lui a
+   chiederlo: in quel caso può comparire la finestra di Google, e gli errori
+   glieli mostriamo. In automatico invece tutto avviene in silenzio.
+
+   **La regola che conta: se qui il diario è vuoto, non si scrive su Drive.**
+   Il caso da temere è proprio quello per cui esiste tutta questa funzione —
+   telefono nuovo, diario ancora vuoto, lui che tocca "Collega" per primo: senza
+   questo blocco, il vuoto di qui cancellerebbe la copia buona di là, e non ci
+   sarebbe più nessun posto da cui riprenderla. In quel caso ci colleghiamo, ma
+   invece di salvare gli diciamo di premere "Riprendi". */
+function driveSalva(interattivo){
+  if(!interattivo&&!S.drive.on) return Promise.resolve();
+  if(!interattivo&&diarioVuoto()) return Promise.resolve();
+  clearTimeout(tDrive); tDrive=null;
+  S.driveStato="corso"; if(S.vista==="impostazioni") render();
+  var riprovato=false;
+  function giro(){
+    return permessoDrive(interattivo&&!GTOK).then(function(tok){
+      var p=S.drive.id?Promise.resolve(S.drive.id):driveCerca(tok);
+      return p.then(function(id){
+        if(diarioVuoto()){ return {fermo:true, id:id}; }
+        return driveScrivi(tok,id,JSON.stringify(raccogli())).then(function(nuovo){ return {id:nuovo}; });
+      });
+    });
+  }
+  return giro().catch(function(e){
+    /* un permesso scaduto è la cosa più normale del mondo: si rifà e basta */
+    if(e.tipo==="scaduto"&&!riprovato){ riprovato=true; GTOK=null; return giro(); }
+    throw e;
+  }).then(function(r){
+    S.drive.on=true; S.drive.id=r.id||S.drive.id;
+    if(r.fermo){ S.driveStato=r.id?"riprendi":"quivuoto"; }
+    else { S.drive.ultimo=Date.now(); S.driveStato="fatto"; }
+    salvaCfg(); if(S.vista==="impostazioni") render();
+  }).catch(function(e){
+    S.driveStato=(e.tipo==="permesso"||e.tipo==="scaduto")?"permesso":(e.tipo==="rete"?"rete":"errore");
+    if(S.vista==="impostazioni") render();
+  });
+}
+
+/* Riprendere: il file di Drive prende il posto di quello che c'è qui, con la
+   stessa strada del ripristino da file — così esiste un solo modo di rimettere
+   dentro i dati, già collaudato. */
+function driveRiprendi(){
+  S.driveStato="corso"; render();
+  permessoDrive(!GTOK).then(function(tok){
+    var p=S.drive.id?Promise.resolve(S.drive.id):driveCerca(tok);
+    return p.then(function(id){
+      if(!id) throw erroreDrive("vuoto");
+      S.drive.id=id;
+      return driveLeggi(tok,id);
+    });
+  }).then(function(testo){
+    S.driveStato=""; S.importa=testo; ripristina();
+  }).catch(function(e){
+    S.driveStato=e.tipo==="vuoto"?"vuoto":(e.tipo==="rete"?"rete":"permesso");
+    render();
+  });
+}
+function driveScollega(){
+  try{ if(GTOK&&window.google&&google.accounts&&google.accounts.oauth2) google.accounts.oauth2.revoke(GTOK); }catch(e){}
+  GTOK=null; S.drive={on:false,id:null,ultimo:null}; S.driveStato="";
+  salvaCfg(); render();
+}
+/* Dopo una voce nuova aspettiamo un minuto prima di risalire su Drive: se sta
+   registrando la cena, riscriverebbe il file cinque volte in due minuti. */
+function driveFraPoco(){
+  if(!S.drive.on) return;
+  clearTimeout(tDrive);
+  tDrive=setTimeout(function(){ driveSalva(false); },60000);
+}
+function quandoSalvato(ts){
+  if(!ts) return "mai";
+  var d=new Date(ts), iso=d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate());
+  var ora=p2(d.getHours())+":"+p2(d.getMinutes());
+  if(iso===oggiISO()) return "oggi alle "+ora;
+  if(iso===isoSposta(oggiISO(),-1)) return "ieri alle "+ora;
+  return dataEstesa(iso)+" alle "+ora;
+}
+
 /* ---------- avvio + funzionamento offline ---------- */
 avvia();
+/* La copia all'apertura parte staccata dall'avvio e in ritardo: se Google non
+   risponde, o non c'è rete, l'app è già in piedi e non se ne accorge nessuno. */
+if(S.drive.on) setTimeout(function(){ driveSalva(false); },2000);
 if("serviceWorker" in navigator){
   window.addEventListener("load",function(){
     navigator.serviceWorker.register("sw.js").catch(function(){});
