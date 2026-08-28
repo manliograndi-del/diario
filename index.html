@@ -394,6 +394,7 @@ var S={
   mese:null, apertoDove:"lista", finestra:null,
   drive:{on:false,id:null,ultimo:null,rev:null}, driveStato:"",
   passi:0, apertoPassi:0, daContapassi:null, pal:{},
+  cerchio:false,
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
   aperto:null, apertoVoci:[], export:"", importa:"", msg:null, spia:"", focus:null
@@ -404,6 +405,7 @@ function avvia(){
   if(cfg){ S.ob=Object.assign({},OB_DEF,cfg.ob||{}); S.miei=cfg.miei||[]; S.recenti=cfg.recenti||[];
            if(cfg.drive) S.drive=Object.assign({on:false,id:null,ultimo:null,rev:null},cfg.drive);
            if(cfg.tema==="chiaro"||cfg.tema==="scuro"||cfg.tema==="auto") S.tema=cfg.tema;
+           S.cerchio=!!cfg.cerchio;
            if(!(Number(cfg.fabV)>=FAB_V)){
              if(S.ob.fab===FAB_VECCHIO) S.ob.fab=FAB_NUOVO;
              salvaCfg();
@@ -417,6 +419,70 @@ function avvia(){
   S.passi=Number(g.passi)||0;
   if(!memOk) S.msg="Questo browser non permette il salvataggio. Esci dalla navigazione privata.";
   render();
+  aggiornaCerchio();
+}
+
+
+/* ---------- il cerchio nella barra in alto ----------
+   Chiesto il 2026-08-28: un cerchio che si riempie man mano che le calorie
+   della giornata si avvicinano all'obiettivo, visibile in cima allo schermo
+   senza aprire niente.
+
+   Come funziona davvero: una pagina web non può disegnare nella barra di
+   stato di Android, ma **una notifica sì**. L'icona piccola di una notifica —
+   il `badge` — è esattamente quel disegno lassù. Quindi il cerchio è una
+   notifica silenziosa che resta lì e che riscriviamo, sempre con la stessa
+   `tag`, ogni volta che il numero cambia.
+
+   Android della `badge` usa **solo il canale alfa** e colora tutto di bianco:
+   niente colori, niente rosso quando si sfora. Per questo i cerchi sono 21
+   immagini già pronte in `badge/` (una ogni 5%, più quella "oltre"), disegnate
+   con il contorno in mezza trasparenza e la fetta piena. Un canvas al volo non
+   servirebbe: le immagini della notifica le carica il browser da un indirizzo,
+   e così funzionano anche senza rete perché il service worker le ha in cache.
+
+   **Si aggiorna quando l'app è aperta**, cioè quando il numero cambia davvero:
+   quando segni qualcosa e quando apri il Diario. Senza un server che spinga le
+   notifiche non c'è modo di aggiornarlo a app chiusa — e non serve, perché a
+   app chiusa il numero non cambia. L'unico caso vero è la mezzanotte: il
+   cerchio resta pieno di ieri finché non riapri l'app. */
+var CERCHIO_TAG="calorie";
+function p3(n){ n=String(n); while(n.length<3) n="0"+n; return n; }
+function cerchioFile(q){
+  if(q>1.0001) return "badge/cerchio-oltre.png";
+  if(q<0) q=0;
+  return "badge/cerchio-"+p3(Math.round(q*20)*5)+".png";
+}
+function cerchioSiPuo(){ return ("Notification" in window) && !!navigator.serviceWorker; }
+function aggiornaCerchio(){
+  if(!S.cerchio||!cerchioSiPuo()||Notification.permission!=="granted") return;
+  var t=totali(S.voci), ob=Math.max(1,S.ob.kcal), q=t.kcal/ob, rest=S.ob.kcal-t.kcal;
+  navigator.serviceWorker.ready.then(function(reg){
+    return reg.showNotification(num(t.kcal)+" di "+S.ob.kcal+" kcal",{
+      tag:CERCHIO_TAG, renotify:false, silent:true,
+      badge:cerchioFile(q), icon:"icon-192.png",
+      body:(rest>=0?"Ti restano "+num(rest)+" kcal":"Sei sopra di "+num(-rest)+" kcal")+
+           " \u00b7 "+Math.round(q*100)+"% dell\u2019obiettivo"
+    });
+  }).catch(function(){});
+}
+function spegniCerchio(){
+  if(!navigator.serviceWorker) return;
+  navigator.serviceWorker.ready.then(function(reg){
+    return reg.getNotifications({tag:CERCHIO_TAG}).then(function(l){
+      l.forEach(function(n){ n.close(); });
+    });
+  }).catch(function(){});
+}
+/* Il permesso si può chiedere solo dopo un tocco suo: da qui, non all'avvio. */
+function accendiCerchio(){
+  if(!cerchioSiPuo()){ S.msg="Questo browser non sa mostrare il cerchio."; render(); return; }
+  Notification.requestPermission().then(function(r){
+    if(r==="granted"){ S.cerchio=true; salvaCfg(); aggiornaCerchio(); }
+    else { S.cerchio=false; salvaCfg();
+           S.msg="Senza il permesso delle notifiche il cerchio non pu\u00f2 comparire."; }
+    render();
+  });
 }
 
 /* ---------- quello che dice la Palestra ----------
@@ -467,7 +533,7 @@ function rigaPalestra(v,senzaSerie){
   return p.join(" \u00b7 ");
 }
 
-function salvaCfg(){ scrivi(K_CFG,{ob:S.ob,miei:S.miei,recenti:S.recenti,tema:S.tema,fabV:FAB_V,drive:S.drive}); }
+function salvaCfg(){ scrivi(K_CFG,{ob:S.ob,miei:S.miei,recenti:S.recenti,tema:S.tema,fabV:FAB_V,drive:S.drive,cerchio:S.cerchio}); }
 
 function totali(v){
   return (v||S.voci).reduce(function(t,x){
@@ -492,6 +558,7 @@ function salva(){
   clearTimeout(tSalva);
   tSalva=setTimeout(function(){
     var ok=salvaOra();
+    aggiornaCerchio();
     S.spia=ok?"fatto":"errore"; aggiornaSpia();
     setTimeout(function(){S.spia="";aggiornaSpia();},1600);
     driveFraPoco();
@@ -525,6 +592,7 @@ function controllaData(){
     S.msg="È un nuovo giorno. Ieri è archiviato nello storico.";
     S.vista="oggi";
     render();
+    aggiornaCerchio();
   }
 }
 setInterval(controllaData,20000);
@@ -539,6 +607,7 @@ document.addEventListener("visibilitychange",function(){
   var cambiata=leggiPalestra();
   controllaData();
   if(cambiata) render();
+  aggiornaCerchio();
 });
 
 /* ---------- azioni ---------- */
@@ -1298,6 +1367,20 @@ function vistaImpostazioni(){
      ORA_BUIO+' di sera alle '+ORA_LUCE+' del mattino, e torna chiaro da sé. I colori che contano '+
      '\u2014 blu le calorie, senape le proteine, verde e rosso il grasso — restano quelli anche al buio.</div></section>';
 
+  h+='<section class="pannello"><div class="etichetta">Cerchio nella barra in alto</div>';
+  if(!cerchioSiPuo()){
+    h+='<div class="nota">Questo browser non sa mostrarlo. Sul telefono funziona.</div>';
+  } else if(S.cerchio&&Notification.permission==="granted"){
+    h+='<div class="nota">Il cerchio \u00e8 acceso. Si riempie man mano che le calorie della giornata si avvicinano alle '+S.ob.kcal+' dell\u2019obiettivo, e diventa pieno quando le superi. Si aggiorna quando segni qualcosa e quando apri il Diario.</div>'+
+       '<button class="b2" data-az="cerchio-no">Togli il cerchio</button>';
+  } else if(Notification.permission==="denied"){
+    h+='<div class="errore">Le notifiche sono state bloccate per questo sito, e il cerchio vive dentro una notifica. Si riattivano dalle impostazioni del telefono, alla voce delle notifiche del Diario.</div>';
+  } else {
+    h+='<div class="nota">Un cerchio in cima allo schermo, sempre visibile, che si riempie man mano che le calorie della giornata si avvicinano alle '+S.ob.kcal+' dell\u2019obiettivo. Vive dentro una notifica silenziosa: non suona e non vibra mai, e la puoi scacciare via quando vuoi.</div>'+
+       '<button class="b1" data-az="cerchio-si">Mostra il cerchio</button>';
+  }
+  h+='</section>';
+
   h+='<section class="pannello"><div class="etichetta">Copia su Google Drive</div>';
   if(!S.drive.on){
     h+='<div class="nota">Il diario si copia da solo nel tuo Google Drive, in un file che resta tuo e che puoi scaricare quando vuoi. Il permesso si dà una volta e riguarda <strong>solo quel file</strong>: del resto del tuo Drive l\'app non vede niente. Senza rete non cambia nulla, il Diario funziona come sempre.</div>'+
@@ -1399,6 +1482,8 @@ document.getElementById("app").addEventListener("click",function(ev){
   }
   else if(az==="mese"){ S.mese=meseSposta(S.mese||meseDiOggi(),Number(v)); S.aperto=null; render(); }
   else if(az==="tema"){ S.tema=b.getAttribute("data-t"); salvaCfg(); render(); }
+  else if(az==="cerchio-si"){ accendiCerchio(); }
+  else if(az==="cerchio-no"){ S.cerchio=false; salvaCfg(); spegniCerchio(); render(); }
   else if(az==="togli-mio"){ var mid=b.getAttribute("data-id"); S.miei=S.miei.filter(function(m){return m.id!==mid;}); salvaCfg(); render(); }
   else if(az==="esporta"){ S.export=JSON.stringify(raccogli()); render(); }
   else if(az==="scarica"){ scaricaBackup(); }

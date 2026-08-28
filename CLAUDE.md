@@ -385,6 +385,45 @@ scheda.
   totali del mese però l'allenamento è contato — si contano su `palestra.indice`,
   non sull'indice del Diario, apposta.
 
+## Il cerchio nella barra in alto
+
+Chiesto il 2026-08-28: "un cerchio che si vede in percentuale tra le calorie
+consumate e le 1500 massime che voglio consumare in un giorno", in cima allo
+schermo del telefono.
+
+**Una pagina web non può disegnare nella barra di stato di Android. Una notifica
+sì.** L'icona piccola di una notifica — il `badge` — *è* quel disegno lassù.
+Quindi il cerchio è una notifica silenziosa, sempre con la stessa `tag`
+(`"calorie"`), che riscriviamo ogni volta che il numero cambia: la notifica
+nuova prende il posto della vecchia invece di accodarsi.
+
+- **Android della `badge` usa solo il canale alfa** e colora tutto di bianco.
+  Niente colori, niente rosso quando sfora. Per questo i cerchi sono immagini
+  già pronte in `badge/` — una ogni 5% più `cerchio-oltre.png` — disegnate con
+  il contorno a mezza trasparenza (esce grigio) e la fetta in nero pieno (esce
+  bianca). Le ha generate uno script con un canvas: se servono di nuovo, si
+  ridisegnano, ma **non provare a generarle al volo nella pagina**: le immagini
+  della notifica le carica il browser da un indirizzo, non da un canvas, e da
+  file funzionano anche senza rete perché il service worker le ha in cache
+  (sono nella lista `CERCHI` di `sw.js`).
+- **Sopra l'obiettivo il cerchio diventa un disco pieno.** A 100% e a 130% si
+  vede la stessa cosa, ed è voluto: nella barra c'è spazio per un'informazione
+  sola, il numero preciso sta nel testo della notifica.
+- **Si aggiorna solo ad app aperta**: quando segni qualcosa, quando apri il
+  Diario, quando torna in primo piano. Senza un server che spinga le notifiche
+  non c'è altro modo, e non serve — a app chiusa il numero non cambia.
+  **L'unico caso vero è la mezzanotte**: il cerchio resta pieno di ieri finché
+  non riapre l'app. Se un giorno dà fastidio, l'unica soluzione onesta è un'app
+  Android, non un trucco nella pagina.
+- **Il permesso si chiede solo dopo un suo tocco** (`accendiCerchio()`), mai
+  all'avvio: chiederlo all'apertura è il modo migliore per farselo negare per
+  sempre, e un "no" è definitivo finché non lo cambia nelle impostazioni di
+  Android. L'interruttore sta in Impostazioni e lo stato vive in
+  `config.cerchio` — che **`salvaCfg()` deve continuare a scrivere**.
+- La notifica è `silent:true` e `renotify:false`: non suona e non vibra mai.
+  Toccandola si torna al Diario (`notificationclick` in `sw.js`), senza aprirne
+  una seconda copia.
+
 ## Aspetto
 
 Palette (variabili CSS in `:root`, usale, non inventare colori):
@@ -431,5 +470,6 @@ con le stringhe di classe scritte nel JavaScript.
 - `sw.js` — funzionamento offline; il numero di cache va alzato a ogni rilascio
 - `manifest.webmanifest` — installazione sulla schermata Home
 - `icon-192.png`, `icon-512.png` — icone
+- `badge/` — i cerchi della barra di stato, uno ogni 5% (generati, non scritti a mano)
 - `passi/` — l'app Android che legge i passi da Health Connect (Kotlin, la compila GitHub)
 - `.github/workflows/passi.yml` — la fabbrica dell'APK dei passi

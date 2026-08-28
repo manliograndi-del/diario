@@ -5,8 +5,13 @@
    github.io vive anche l'app Palestra e le due si cancellerebbero
    la cache a vicenda. Alza il numero di versione a ogni rilascio. */
 const PREFISSO = "diario-";
-const CACHE = PREFISSO + "v24";
-const FILE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
+const CACHE = PREFISSO + "v25";
+/* I cerchi della barra in alto: uno ogni 5%, più quello di quando si sfora.
+   Vanno in cache come gli altri file, altrimenti in aereo la notifica
+   resterebbe senza disegno. */
+const CERCHI = ["./badge/cerchio-oltre.png"];
+for (let i = 0; i <= 100; i += 5) CERCHI.push("./badge/cerchio-" + String(i).padStart(3, "0") + ".png");
+const FILE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"].concat(CERCHI);
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
@@ -62,6 +67,18 @@ self.addEventListener("fetch", (e) => {
       return fetch(e.request)
         .then((res) => conserva(e.request, res))
         .catch(() => caches.match("./index.html"));
+    })
+  );
+});
+
+/* La notifica del cerchio si tocca e riporta al Diario, senza aprirne una
+   seconda copia se è già aperto. */
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((l) => {
+      for (const c of l) if ("focus" in c) return c.focus();
+      return self.clients.openWindow("./");
     })
   );
 });
