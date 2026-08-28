@@ -1,0 +1,45 @@
+# Compila l'app "Diario passi" e ne pubblica l'APK: la sessione in cui viene
+# scritta non ha l'SDK di Android e non può compilare niente.
+# Il file da scaricare resta sempre allo stesso indirizzo:
+#   https://github.com/manliograndi-del/diario/releases/download/passi/diario-passi.apk
+name: APK dei passi
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'passi/**'
+      - '.github/workflows/passi.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Pezzi dell'SDK
+        run: sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Compila
+        working-directory: passi
+        run: gradle --no-daemon assembleDebug
+      - name: Prepara il file
+        run: cp passi/app/build/outputs/apk/debug/app-debug.apk diario-passi.apk
+      - name: Pubblica l'APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete passi --yes --cleanup-tag || true
+          gh release create passi diario-passi.apk \
+            --title "Diario passi — ultima versione" \
+            --notes "Legge i passi da Health Connect e li manda al Diario. Chiede un permesso solo: leggere i passi."

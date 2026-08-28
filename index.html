@@ -241,6 +241,7 @@ button.sg{padding:2px 0}
 .sc-macro{font-family:var(--mono);font-size:11px;color:var(--tenue);margin-top:11px}
 .sc-gruppo{margin-top:12px}
 .sc-vuoto{font-size:13.5px;color:var(--tenue);line-height:1.55;margin-top:11px}
+.dett-r{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;padding:7px 0;border-bottom:1px solid var(--linea)}
 
 /* Qui c'era la transizione del cambio giorno, provata il 2026-08-22 e tolta lo
    stesso giorno: a Manlio sembrava un salto anche rallentata. Il giorno nuovo
@@ -388,7 +389,7 @@ var S={
   vista:"oggi", data:oggiISO(), voci:[], indice:{}, ob:OB_DEF, miei:[], recenti:[], tema:"auto",
   mese:null, apertoDove:"lista", finestra:null,
   drive:{on:false,id:null,ultimo:null,rev:null}, driveStato:"",
-  passi:0, apertoPassi:0,
+  passi:0, apertoPassi:0, daContapassi:null,
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
   aperto:null, apertoVoci:[], export:"", importa:"", msg:null, spia:"", focus:null
@@ -405,6 +406,7 @@ function avvia(){
            } }
   S.indice=leggi(K_IDX,{})||{};
   S.data=oggiISO();
+  S.daContapassi=leggiMessaggioPassi();
   var g=leggi(K_G+S.data,{voci:[]});
   S.voci=g.voci||[];
   S.passi=Number(g.passi)||0;
@@ -514,6 +516,78 @@ function ricTotali(){
   return t;
 }
 
+/* ---------- i passi che arrivano dall'app contapassi ----------
+   L'app "Diario passi" legge i passi da Health Connect — cosa che una pagina
+   web non può fare, né oggi né mai — e apre qui un indirizzo con dentro gli
+   ultimi giorni. Stessa strada dell'orologio della Palestra: l'app racconta,
+   il Diario decide. Nessuna app installata sul telefono serve al Diario.
+
+     #passi=1;2026-08-27:8500,2026-08-26:11000
+
+   Scrive **solo** il numero dei passi di quei giorni: le voci di cibo non le
+   tocca nessuno, e i giorni che non conosce li lascia stare. */
+var PASSI_V=1;
+function leggiMessaggioPassi(){
+  var h=String(location.hash||"");
+  var i=h.indexOf("passi=");
+  if(i<0) return null;
+  var pezzi=h.slice(i+6).split(";");
+  if(Number(pezzi[0])!==PASSI_V) return {errore:"versione"};
+  var giorni=[], oggi=oggiISO(), fuori=false;
+  (pezzi[1]||"").split(",").forEach(function(k){
+    if(!k) return;
+    var a=k.split(":"), d=a[0], n=Math.round(Number(a[1]));
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||!isFinite(n)||n<0||n>200000){ fuori=true; return; }
+    if(d>oggi) return;                    // un domani non esiste: si ignora
+    giorni.push({data:d, passi:n});
+  });
+  if(fuori||!giorni.length) return {errore:"formato"};
+  giorni.sort(function(a,b){ return a.data<b.data?1:-1; });
+  return {giorni:giorni};
+}
+function pulisciPassi(){
+  try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){ location.hash=""; }
+}
+function passiRegistra(){
+  var m=S.daContapassi; if(!m||m.errore) return;
+  var n=0;
+  m.giorni.forEach(function(g){
+    var f=leggi(K_G+g.data,null)||{voci:[]};
+    f.passi=g.passi;
+    scrivi(K_G+g.data,f);
+    var t=totali(f.voci||[]);
+    var v=S.indice[g.data]||{kcal:Math.round(t.kcal),p:Math.round(t.p),c:Math.round(t.c),g:Math.round(t.g),n:(f.voci||[]).length};
+    v.passi=g.passi;
+    S.indice[g.data]=v;
+    if(g.data===S.data) S.passi=g.passi;
+    n++;
+  });
+  scrivi(K_IDX,S.indice);
+  S.daContapassi=null; pulisciPassi();
+  S.msg="Passi aggiornati: "+n+(n===1?" giorno.":" giorni.");
+  S.vista="oggi"; render();
+}
+function passiAnnulla(){ S.daContapassi=null; pulisciPassi(); render(); }
+function avvisoPassi(){
+  var m=S.daContapassi; if(!m) return "";
+  if(m.errore) return '<section class="pannello"><div class="etichetta">Passi dal contapassi</div>'+
+    '<div class="errore">'+(m.errore==="versione"
+      ? "L'app dei passi è di una versione diversa da questa. Aggiornala."
+      : "Il messaggio non si legge. Scrivi i passi a mano.")+'</div>'+
+    '<button class="b2" data-az="passi-no">Chiudi</button></section>';
+  var el=m.giorni.slice(0,7).map(function(g){
+    var vecchi=(S.indice[g.data]&&S.indice[g.data].passi)||0;
+    return '<div class="dett-r"><span>'+dataEstesa(g.data)+'</span><strong>'+num(g.passi)+
+           (vecchi&&vecchi!==g.passi?' <span class="unita">(era '+num(vecchi)+')</span>':'')+'</strong></div>';
+  }).join("");
+  return '<section class="pannello"><div class="etichetta">Passi dal contapassi</div>'+
+    '<div class="cifra-m">'+m.giorni.length+'<span class="unita"> '+(m.giorni.length===1?"giorno":"giorni")+'</span></div>'+
+    el+
+    '<div class="nota">Aggiorna solo i passi: quello che hai mangiato non viene toccato.</div>'+
+    '<button class="b1" data-az="passi-si">Registra</button>'+
+    '<button class="b2" data-az="passi-no">Annulla</button></section>';
+}
+
 /* ---------- render ---------- */
 function render(){
   applicaTema();
@@ -546,6 +620,7 @@ function render(){
   if(S.msg) h+='<div class="avviso" data-az="chiudi-msg">'+esc(S.msg)+' <span class="avviso-x">chiudi</span></div>';
 
   h+='<main class="corpo">';
+  if(S.daContapassi) h+=avvisoPassi();
   if(S.vista==="oggi") h+=vistaOggi();
   else if(S.vista==="aggiungi") h+=vistaAggiungi();
   else if(S.vista==="storico") h+=vistaStorico();
@@ -1227,6 +1302,8 @@ document.getElementById("app").addEventListener("click",function(ev){
   else if(az==="togli-mio"){ var mid=b.getAttribute("data-id"); S.miei=S.miei.filter(function(m){return m.id!==mid;}); salvaCfg(); render(); }
   else if(az==="esporta"){ S.export=JSON.stringify(raccogli()); render(); }
   else if(az==="scarica"){ scaricaBackup(); }
+  else if(az==="passi-si"){ passiRegistra(); }
+  else if(az==="passi-no"){ passiAnnulla(); }
   else if(az==="drive-collega"){ driveSalva(true); }
   else if(az==="drive-salva"){ driveSalva(true); }
   else if(az==="drive-riprendi"){ driveRiprendi(); }
@@ -1529,6 +1606,13 @@ function quandoSalvato(ts){
   if(iso===isoSposta(oggiISO(),-1)) return "ieri alle "+ora;
   return dataEstesa(iso)+" alle "+ora;
 }
+
+/* Ad app già aperta il telefono non ricarica niente, cambia solo l'indirizzo:
+   senza questo, i passi mandati dal contapassi non comparirebbero mai. */
+window.addEventListener("hashchange",function(){
+  var m=leggiMessaggioPassi();
+  if(m){ S.daContapassi=m; render(); }
+});
 
 /* ---------- avvio + funzionamento offline ---------- */
 avvia();
