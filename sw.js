@@ -5,7 +5,7 @@
    github.io vive anche l'app Palestra e le due si cancellerebbero
    la cache a vicenda. Alza il numero di versione a ogni rilascio. */
 const PREFISSO = "diario-";
-const CACHE = PREFISSO + "v26";
+const CACHE = PREFISSO + "v27";
 /* I cerchi della barra in alto: uno ogni 5%, più quello di quando si sfora.
    Vanno in cache come gli altri file, altrimenti in aereo la notifica
    resterebbe senza disegno. */
@@ -68,40 +68,36 @@ function arco(x, cx, cy, r, spesso, colore, quota) {
 async function disegnaAnelli(u) {
   const n = (k, d) => { const v = Number(u.searchParams.get(k)); return isFinite(v) && v > 0 ? v : d; };
   const kcal = Math.max(0, Number(u.searchParams.get("k")) || 0);
-  const fab = n("f", 2200), obK = n("ok", 1500);
+  const obK = n("ok", 1500);
   const prot = Math.max(0, Number(u.searchParams.get("p")) || 0), obP = n("op", 160);
   const C = TAVOLOZZA[u.searchParams.get("t") === "scuro" ? "scuro" : "chiaro"];
 
   const W = 1024, H = 512, c = new OffscreenCanvas(W, H), x = c.getContext("2d");
   x.fillStyle = C.carta; x.fillRect(0, 0, W, H);
 
-  /* gli anelli: fuori le calorie sul fabbisogno, dentro le proteine.
-     Stessa disposizione della schermata Oggi, non un'altra invenzione. */
+  /* Fuori le calorie sull'obiettivo, dentro le proteine sul loro. Oltre
+     l'obiettivo l'anello riparte per un secondo giro in rosso, col primo giro
+     pieno che resta sotto: sono le stesse regole di `anelli()` in index.html.
+     Se cambiano di là, vanno cambiate anche qui. */
   const cx = 262, cy = 256, spesso = 34, R = 186, r = R - spesso - 6;
+  const qk = kcal / obK;
   x.strokeStyle = C.traccia; x.lineWidth = spesso; x.lineCap = "butt";
   x.beginPath(); x.arc(cx, cy, R, 0, Math.PI * 2); x.stroke();
   x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.stroke();
-  arco(x, cx, cy, R, spesso, kcal > fab ? C.rosso : C.blu, kcal / fab);
-  arco(x, cx, cy, r, spesso, C.senape, prot / obP);
-
-  /* la tacca dell'obiettivo, come nell'app */
-  const a = (-90 + 360 * Math.min(1, obK / fab)) * Math.PI / 180;
-  x.strokeStyle = C.inchiostro; x.lineWidth = 5; x.lineCap = "round";
-  x.beginPath();
-  x.moveTo(cx + (R - spesso / 2 - 4) * Math.cos(a), cy + (R - spesso / 2 - 4) * Math.sin(a));
-  x.lineTo(cx + (R + spesso / 2 + 4) * Math.cos(a), cy + (R + spesso / 2 + 4) * Math.sin(a));
-  x.stroke();
+  arco(x, cx, cy, R, spesso, C.blu, Math.min(1, qk));
+  arco(x, cx, cy, R, spesso, C.rosso, Math.min(1, Math.max(0, qk - 1)));
+  arco(x, cx, cy, r, spesso, C.senape, Math.min(1, prot / obP));
 
   /* i numeri, a destra */
   const sx = 540;
   x.textBaseline = "alphabetic";
   x.fillStyle = C.tenue; x.font = "600 26px system-ui, sans-serif";
   x.fillText("CALORIE", sx, 150);
-  x.fillStyle = kcal > fab ? C.rosso : C.blu; x.font = "700 92px system-ui, sans-serif";
+  x.fillStyle = kcal > obK ? C.rosso : C.blu; x.font = "700 92px system-ui, sans-serif";
   const nk = x.measureText(String(Math.round(kcal))).width;
   x.fillText(String(Math.round(kcal)), sx, 232);
   x.fillStyle = C.tenue; x.font = "400 34px system-ui, sans-serif";
-  x.fillText(" di " + Math.round(fab), sx + nk, 232);
+  x.fillText(" di " + Math.round(obK), sx + nk, 232);
 
   x.fillStyle = C.tenue; x.font = "600 26px system-ui, sans-serif";
   x.fillText("PROTEINE", sx, 340);

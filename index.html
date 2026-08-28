@@ -220,7 +220,7 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 .pt{width:9px;height:9px;border-radius:50%;display:inline-block}
 .pt.blu{background:var(--blu)}
 .pt.sen{background:var(--senape)}
-.pt.tacca{width:2.5px;height:11px;border-radius:1px;background:var(--inchiostro)}
+.pt.ros{background:var(--rosso)}
 .due-cifre{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px;padding-top:15px;border-top:1px solid var(--linea)}
 .due-cifre .cifra-m{margin:5px 0 0}
 
@@ -461,7 +461,7 @@ function aggiornaCerchio(){
      numeri che gli passiamo qui. La data ci va dentro apposta, perché un
      indirizzo identico verrebbe ripreso dalla memoria del browser e la
      notifica mostrerebbe il disegno di prima. */
-  var img="anelli.png?k="+Math.round(t.kcal)+"&f="+S.ob.fab+"&ok="+S.ob.kcal+
+  var img="anelli.png?k="+Math.round(t.kcal)+"&ok="+S.ob.kcal+
           "&p="+Math.round(t.p)+"&op="+S.ob.p+"&t="+(temaScuro()?"scuro":"chiaro")+
           "&v="+Date.now();
   navigator.serviceWorker.ready.then(function(reg){
@@ -779,31 +779,44 @@ function render(){
   }
 }
 
-function anelli(kcal,prot,dim,spesso,conTacca){
+/* I due anelli. Fuori le calorie, dentro le proteine.
+   **Tutti e due sull'obiettivo della giornata** (1500 kcal e 160 g), non sul
+   fabbisogno: chiesto il 2026-08-28. Prima l'anello delle calorie era tarato
+   sul fabbisogno, con una tacca all'obiettivo, e l'arco vuoto era il deficit.
+   Era vero ma non rispondeva alla domanda che si fa lui guardandolo — "quanto
+   mi manca a quello che devo fare oggi" — e le due misure erano due, con due
+   scale diverse. Il deficit non è sparito: sta nella cifra sotto e nel disco
+   del grasso, che continuano a leggersi sul fabbisogno.
+
+   **Oltre l'obiettivo l'anello riparte per un secondo giro, in rosso.** Il
+   primo giro resta pieno sotto, così si vede a colpo d'occhio che il giro è
+   già stato fatto: cerchio blu pieno più un arco rosso che cresce sopra.
+   Fermarlo al pieno, come faceva prima, nascondeva proprio i giorni che
+   contano di più. Oltre i due giri resta pieno: a quel punto il numero lo dice
+   meglio di qualsiasi disegno.
+
+   Le proteine no: superare i grammi di proteine non è una cosa da segnalare,
+   e il rosso lì vorrebbe dire una colpa che non c'è. */
+function anelli(kcal,prot,dim,spesso){
   var R=(dim/2)-spesso/2-1, r=R-spesso-2, cx=dim/2, cy=dim/2;
   var CR=2*Math.PI*R, cr=2*Math.PI*r;
-  var qk=Math.min(1,kcal/Math.max(1,S.ob.fab)), qp=Math.min(1,prot/Math.max(1,S.ob.p));
-  var oltre=kcal>S.ob.fab;
+  var qk=kcal/Math.max(1,S.ob.kcal), qp=Math.min(1,prot/Math.max(1,S.ob.p));
+  var primo=Math.min(1,qk), secondo=Math.min(1,Math.max(0,qk-1));
+  function ar(raggio,giro,colore,quota){
+    return '<circle cx="'+cx+'" cy="'+cy+'" r="'+raggio+'" fill="none" style="stroke:var('+colore+
+           ')" stroke-width="'+spesso+'" stroke-linecap="round" stroke-dasharray="'+giro+
+           '" stroke-dashoffset="'+(giro*(1-quota))+'" class="arco"/>';
+  }
   var s='<svg class="anelli" viewBox="0 0 '+dim+' '+dim+'" width="'+dim+'" height="'+dim+'">';
   s+='<g transform="rotate(-90 '+cx+' '+cy+')">';
   s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" style="stroke:var(--traccia)" stroke-width="'+spesso+'"/>';
   s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" style="stroke:var(--traccia)" stroke-width="'+spesso+'"/>';
-  s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" style="stroke:var('+(oltre?"--rosso":"--blu")+
-     ')" stroke-width="'+spesso+'" stroke-linecap="round" stroke-dasharray="'+CR+
-     '" stroke-dashoffset="'+(CR*(1-qk))+'" class="arco"/>';
-  s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" style="stroke:var(--senape)" stroke-width="'+spesso+
-     '" stroke-linecap="round" stroke-dasharray="'+cr+'" stroke-dashoffset="'+(cr*(1-qp))+'" class="arco"/>';
-  s+='</g>';
-  if(conTacca){
-    var a=(-90+360*(S.ob.kcal/Math.max(1,S.ob.fab)))*Math.PI/180;
-    var x1=cx+(R-spesso/2-2)*Math.cos(a), y1=cy+(R-spesso/2-2)*Math.sin(a);
-    var x2=cx+(R+spesso/2+2)*Math.cos(a), y2=cy+(R+spesso/2+2)*Math.sin(a);
-    s+='<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" style="stroke:var(--inchiostro)" stroke-width="2.5" stroke-linecap="round"/>';
-  }
-  s+='</svg>';
+  if(primo>0) s+=ar(R,CR,"--blu",primo);
+  if(secondo>0) s+=ar(R,CR,"--rosso",secondo);
+  if(qp>0) s+=ar(r,cr,"--senape",qp);
+  s+='</g></svg>';
   return s;
 }
-
 /* Le calorie della camminata, da passi e peso.
    1400 passi ≈ un chilometro (passo di 72 cm), e si contano **0,5 kcal per
    chilo per chilometro**: è la spesa *in più* rispetto allo stare fermi, non
@@ -982,10 +995,10 @@ function vistaOggi(){
      (passato?'<button class="sc-chiudi" data-az="apri" data-d="'+aperto+'">torna a oggi</button>':"")+
      '</div>';
   h+='<div class="quad-riga">'+
-     '<div class="anelli-box">'+anelli(t.kcal,t.p,176,13,true)+
+     '<div class="anelli-box">'+anelli(t.kcal,t.p,176,13)+
      '<div class="centro">'+
        '<div class="c-kcal">'+num(t.kcal)+'</div>'+
-       '<div class="c-sotto">di '+S.ob.fab+' kcal di fabbisogno</div>'+
+       '<div class="c-sotto">di '+S.ob.kcal+' kcal</div>'+
        '<div class="c-prot">'+num(t.p)+' <span>/'+S.ob.p+' g</span></div>'+
      '</div></div>'+
      cerchioGrassi(t.kcal)+
@@ -993,7 +1006,7 @@ function vistaOggi(){
      '<div class="legenda">'+
        '<span class="lg"><i class="pt blu"></i>Calorie</span>'+
        '<span class="lg"><i class="pt sen"></i>Proteine</span>'+
-       '<span class="lg"><i class="pt tacca"></i>Obiettivo '+S.ob.kcal+'</span>'+
+       (t.kcal>S.ob.kcal?'<span class="lg"><i class="pt ros"></i>Oltre le '+S.ob.kcal+'</span>':'')+
      '</div>'+
      '<div class="due-cifre">'+
        '<div><div class="etichetta">'+(oltreOb?"Oltre l\'obiettivo":(passato?"Sotto l\'obiettivo":"Ancora fino a "+S.ob.kcal))+'</div>'+
@@ -1016,7 +1029,7 @@ function vistaOggi(){
   s7.forEach(function(g){
     h+='<button class="sg'+(g.iso===oggiISO()?" oggi":"")+(aperto===g.iso?" on":"")+'"'+
        ' data-az="apri" data-d="'+g.iso+'">'+
-       '<div class="sg-anello'+(g.vuoto?" spento":"")+'">'+anelli(g.kcal,g.p,42,4,false)+'</div>'+
+       '<div class="sg-anello'+(g.vuoto?" spento":"")+'">'+anelli(g.kcal,g.p,42,4)+'</div>'+
        '<div class="sg-l">'+g.lettera+'</div></button>';
   });
   h+='</div><div class="p-piede">'+
@@ -1355,7 +1368,7 @@ function vistaImpostazioni(){
     h+='<div><div class="mini-et">'+x[1]+'</div><input class="campo" data-in="ob-'+x[0]+
        '" type="number" inputmode="numeric" value="'+S.ob[x[0]]+'"></div>';
   });
-  h+='</div><div class="nota">Si salvano appena li modifichi. Il <strong>fabbisogno</strong> è la scala dell\'anello esterno: l\'arco che resta vuoto è il deficit della giornata. L\'<strong>obiettivo</strong> è la tacca nera. Il <strong>peso</strong> serve solo a stimare le calorie della camminata.</div></section>';
+  h+='</div><div class="nota">Si salvano appena li modifichi. L\'<strong>obiettivo</strong> è la scala dei due anelli: quando lo superi l\'anello riparte per un secondo giro, in rosso. Il <strong>fabbisogno</strong> non sta negli anelli, è la scala del deficit e del disco del grasso. Il <strong>peso</strong> serve a stimare le calorie della camminata e della palestra.</div></section>';
 
   h+='<section class="pannello"><div class="etichetta">I miei alimenti ('+S.miei.length+')</div>';
   if(S.miei.length===0) h+='<div class="nota">Quello che inserisci a mano o componi come ricetta puoi salvarlo qui, e la volta dopo lo ritrovi cercandolo.</div>';

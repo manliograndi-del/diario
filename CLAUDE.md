@@ -95,8 +95,25 @@ Non c'è un server da cui recuperare: quei dati esistono solo sul suo telefono.
 
 Non ribaltarle senza dirglielo esplicitamente.
 
-- **L'anello esterno è tarato sul fabbisogno, non sull'obiettivo (1500).**
-  Così l'arco vuoto rappresenta il deficit. La tacca nera segna l'obiettivo.
+- **I due anelli sono tarati sull'obiettivo della giornata** (1500 kcal e 160 g),
+  dal 2026-08-28. Prima quello esterno era tarato sul fabbisogno, con una tacca
+  nera all'obiettivo, e l'arco vuoto era il deficit: vero, ma i due anelli
+  avevano due scale diverse e nessuno dei due rispondeva alla domanda che si fa
+  lui guardandoli — *quanto mi manca a quello che devo fare oggi*. L'ha chiesto
+  lui, con queste parole: "come quello delle proteine anche il cerchio delle
+  calorie tarato su quello che devo fare nella giornata".
+  **Oltre l'obiettivo l'anello riparte per un secondo giro, in rosso**, col
+  primo giro pieno che resta sotto: fermarlo al pieno nascondeva proprio i
+  giorni che contano di più. Le proteine no — superare i grammi di proteine non
+  è una colpa e il rosso lì direbbe una cosa falsa.
+  Il deficit non è sparito: resta la cifra sotto gli anelli e il disco del
+  grasso, che si leggono sul fabbisogno. La tacca nera non c'è più (l'obiettivo
+  adesso *è* il giro intero) e con lei la voce "tacca" della legenda.
+  **`anelli()` è una funzione sola**: cambiandola cambiano il quadrante, la
+  striscia dei 7 giorni e i giorni passati tutti insieme. È voluto — lui l'ha
+  chiesto proprio così: "tutto anche il passato deve apparire con questa
+  grafica". Le stesse regole sono ricopiate in `disegnaAnelli()` dentro `sw.js`
+  per l'immagine della notifica: **se cambi di qua, cambia anche di là.**
 - **Il fabbisogno è 2200 kcal dal 2026-08-21** (prima 2500, l'ha chiesto lui).
   Cambiare `OB_DEF` non bastava: il numero vecchio era già salvato in
   `diario.config` sul suo telefono. La conversione la fa `FAB_V` in `avvia()`, una
