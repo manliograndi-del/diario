@@ -5,7 +5,7 @@ plugins {
 
 android {
   namespace = "it.manlio.diariopassi"
-  compileSdk = 34
+  compileSdk = 35
 
   defaultConfig {
     applicationId = "it.manlio.diariopassi"
