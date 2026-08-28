@@ -328,6 +328,10 @@ var ARCHIVIO = [
 
 /* ---------- costanti e utilità ---------- */
 var K_CFG="diario.config", K_IDX="diario.indice", K_G="diario.g.";
+/* Sola lettura: il Diario guarda l'indice della Palestra, non lo scrive mai.
+   Le due app vivono sullo stesso indirizzo e dividono lo stesso localStorage:
+   il prefisso è tutta la separazione che c'è. */
+var K_PAL="palestra.indice";
 var OB_DEF={kcal:1500,fab:2200,p:160,c:120,g:45,peso:97};
 /* Il fabbisogno è sceso da 2500 a 2200 il 2026-08-21, chiesto da Manlio.
    Cambiare la costante non basta: chi usa già l'app ha il vecchio numero
@@ -389,7 +393,7 @@ var S={
   vista:"oggi", data:oggiISO(), voci:[], indice:{}, ob:OB_DEF, miei:[], recenti:[], tema:"auto",
   mese:null, apertoDove:"lista", finestra:null,
   drive:{on:false,id:null,ultimo:null,rev:null}, driveStato:"",
-  passi:0, apertoPassi:0, daContapassi:null,
+  passi:0, apertoPassi:0, daContapassi:null, pal:{},
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
   aperto:null, apertoVoci:[], export:"", importa:"", msg:null, spia:"", focus:null
@@ -405,6 +409,7 @@ function avvia(){
              salvaCfg();
            } }
   S.indice=leggi(K_IDX,{})||{};
+  leggiPalestra();
   S.data=oggiISO();
   S.daContapassi=leggiMessaggioPassi();
   var g=leggi(K_G+S.data,{voci:[]});
@@ -412,6 +417,54 @@ function avvia(){
   S.passi=Number(g.passi)||0;
   if(!memOk) S.msg="Questo browser non permette il salvataggio. Esci dalla navigazione privata.";
   render();
+}
+
+/* ---------- quello che dice la Palestra ----------
+   L'app della palestra salva le sue sedute sullo stesso telefono e sullo
+   stesso magazzino: qui basta leggerle. Nessun collegamento, nessuna rete,
+   niente da sincronizzare — e se la Palestra non è mai stata aperta su questo
+   telefono, l'indice non c'è e non succede niente.
+   **Il Diario non scrive mai dentro le chiavi palestra.**
+   Si rilegge solo quando cambia davvero, per non ridisegnare per niente. */
+var palGrezzo=null;
+function leggiPalestra(){
+  var t=null;
+  try{ t=localStorage.getItem(K_PAL); }catch(e){ t=null; }
+  if(t===palGrezzo) return false;
+  palGrezzo=t;
+  try{ S.pal=t?(JSON.parse(t)||{}):{}; }catch(e){ S.pal={}; }
+  return true;
+}
+function palestraDi(data){
+  var v=S.pal[data];
+  if(!v) return null;
+  if(!(v.serie>0)&&!(v.minC>0)) return null;
+  return v;
+}
+/* Le calorie della seduta, stimate come per la camminata e con lo stesso
+   patto: **si mostrano e basta**, non entrano nel deficit e non cambiano i
+   grammi di grasso. Conto classico kcal/min = MET x 3,5 x kg / 200.
+   Ai pesi va MET 3,5 — quello dei circuiti con recupero, non quello dello
+   sforzo puro: fra una serie e l'altra c'è un minuto fermo, e contarlo come
+   lavoro raddoppierebbe il numero. Ogni serie vale un minuto e mezzo: mezzo
+   di lavoro e uno di recupero, che è il timer della Palestra.
+   Al cardio va MET 5, camminata in pendenza e cyclette a ritmo tranquillo.
+   I minuti di cardio arrivano già contati dalla Palestra, che è l'unica a
+   sapere quanto dura ogni blocco. */
+var MET_PESI=3.5, MET_CARDIO=5, MIN_PER_SERIE=1.5;
+function kcalPalestra(v){
+  var pe=Number(S.ob.peso)||0;
+  if(!v||!pe) return 0;
+  var q=function(met,min){ return met*3.5*pe/200*min; };
+  return q(MET_PESI,(Number(v.serie)||0)*MIN_PER_SERIE)+q(MET_CARDIO,Number(v.minC)||0);
+}
+/* Una riga sola che racconta la seduta, usata in più posti. */
+function rigaPalestra(v,senzaSerie){
+  var p=[];
+  if(!senzaSerie&&v.serie>0) p.push(v.serie+(v.tot?" serie su "+v.tot:" serie"));
+  if(v.minC>0) p.push(v.minC+"\u2032 di cardio");
+  if(v.volume>0) p.push(num(v.volume)+" kg sollevati");
+  return p.join(" \u00b7 ");
 }
 
 function salvaCfg(){ scrivi(K_CFG,{ob:S.ob,miei:S.miei,recenti:S.recenti,tema:S.tema,fabV:FAB_V,drive:S.drive}); }
@@ -478,7 +531,15 @@ setInterval(controllaData,20000);
 /* la sfumatura del grasso è calcolata, non basta cambiare le variabili CSS:
    quando l'ora fa scattare il tema bisogna ridisegnare */
 setInterval(function(){ if(applicaTema()) render(); },20000);
-document.addEventListener("visibilitychange",function(){if(!document.hidden)controllaData();});
+/* Tornando dall'app della palestra la seduta di oggi è appena stata salvata:
+   se l'indice è cambiato bisogna ridisegnare, altrimenti il pannello resterebbe
+   a dire che non ti sei allenato. */
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden) return;
+  var cambiata=leggiPalestra();
+  controllaData();
+  if(cambiata) render();
+});
 
 /* ---------- azioni ---------- */
 function aggiungiVoce(a,gr,pasto){
@@ -760,11 +821,18 @@ function ultimi7(){
 /* Dettaglio di una giornata: totali e voci raggruppate per pasto.
    Usato sia nella scheda che si apre dalla striscia dei 7 giorni,
    sia nello storico, così i due posti mostrano le stesse cose. */
-function dettaglioGiorno(voci,conRiepilogo,passi){
+function dettaglioGiorno(voci,conRiepilogo,passi,data){
   voci=voci||[];
   passi=Number(passi)||0;
-  if(voci.length===0) return '<div class="sc-vuoto">'+
-    (passi?num(passi)+' passi, ma nessuna voce registrata in questo giorno.':'Nessuna voce registrata in questo giorno.')+'</div>';
+  var pal=data?palestraDi(data):null;
+  if(voci.length===0){
+    var fatto=[];
+    if(passi) fatto.push(num(passi)+' passi');
+    if(pal) fatto.push('palestra ('+rigaPalestra(pal)+')');
+    return '<div class="sc-vuoto">'+
+      (fatto.length?fatto.join(', ')+', ma nessuna voce registrata in questo giorno.'
+                   :'Nessuna voce registrata in questo giorno.')+'</div>';
+  }
   var t=totali(voci), scarto=S.ob.kcal-t.kcal, h="";
 
   if(conRiepilogo){
@@ -776,7 +844,8 @@ function dettaglioGiorno(voci,conRiepilogo,passi){
        '</div>';
     h+='<div class="sc-macro">Carboidrati '+num(t.c)+' g \u00b7 Grassi '+num(t.g)+' g \u00b7 '+
        voci.length+(voci.length===1?" voce":" voci")+
-       (passi?' \u00b7 '+num(passi)+' passi (\u2248 '+num(kcalPassi(passi))+' kcal)':'')+'</div>';
+       (passi?' \u00b7 '+num(passi)+' passi (\u2248 '+num(kcalPassi(passi))+' kcal)':'')+
+       (pal?' \u00b7 palestra '+pal.serie+' serie (\u2248 '+num(kcalPalestra(pal))+' kcal)':'')+'</div>';
     h+='<div class="p-piede">'+(scarto>=0
        ?"Sotto l\u2019obiettivo di "+num(scarto)+" kcal"
        :"Sopra l\u2019obiettivo di "+num(-scarto)+" kcal")+'</div>';
@@ -884,7 +953,7 @@ function vistaOggi(){
     h+='<section class="pannello"><div class="p-testa">'+
        '<span class="etichetta">Cosa hai mangiato</span>'+
        (passato?"":'<button class="sc-chiudi" data-az="apri" data-d="'+aperto+'">chiudi</button>')+
-       '</div>'+dettaglioGiorno(voci,false,pa)+'</section>';
+       '</div>'+dettaglioGiorno(voci,false,pa,aperto||S.data)+'</section>';
   }
 
   h+='<section class="coppia">'+mini("Carboidrati",t.c,S.ob.c)+mini("Grassi",t.g,S.ob.g)+'</section>';
@@ -901,6 +970,22 @@ function vistaOggi(){
        '<input class="campo-qta" data-in="passi" type="number" inputmode="numeric" value="'+(S.passi||"")+'" placeholder="0">'+
        '<span class="u">passi</span></div>'+
        '<div class="nota">Il numero lo copi da Google Fit. \u00c8 una stima: non entra nel deficit e non cambia i grammi di grasso.</div>';
+  }
+  h+='</section>';
+
+  /* La palestra sta qui accanto alla camminata, e vale lo stesso patto: si
+     mostra e basta. I dati non li scrive lui e non li scrive il Diario —
+     arrivano dall'app della Palestra, che salva sullo stesso telefono. */
+  var gg=aperto||S.data, pal=palestraDi(gg);
+  h+='<section class="pannello"><div class="p-testa"><span class="etichetta">Palestra</span>'+
+     (pal?'<span class="g-kcal">\u2248 '+num(kcalPalestra(pal))+' kcal</span>':'')+'</div>';
+  if(pal){
+    h+='<div class="cifra-m">'+pal.serie+'<span class="unita"> serie'+(pal.tot?' su '+pal.tot:'')+'</span></div>'+
+       '<div class="nota">'+(rigaPalestra(pal,true)?rigaPalestra(pal,true)+'. ':'')+
+       'Stima delle calorie: non entra nel deficit e non cambia i grammi di grasso.</div>';
+  } else {
+    h+='<div class="cifra-m"><span class="unita">'+(passato?'nessun allenamento in questo giorno':'nessun allenamento oggi')+'</span></div>'+
+       '<div class="nota">Le sedute arrivano da sole dall\u2019app Palestra: quello che spunti l\u00ec compare qui.</div>';
   }
   h+='</section>';
 
@@ -1052,6 +1137,15 @@ function meseSposta(m,n){
 function meseEsteso(m){ var a=m.split("-").map(Number); return MM[a[1]-1]+" "+a[0]; }
 function datiMese(m){
   var t={n:0,kcal:0,p:0,c:0,g:0,persi:0,presi:0,sotto:0,passi:0,nPassi:0};
+  /* Gli allenamenti si contano a parte, sull'indice della Palestra: un giorno
+     in cui è andato in palestra senza segnare niente da mangiare non sta
+     nell'indice del Diario, ma resta un allenamento fatto. */
+  t.pal=0; t.palKcal=0; t.palSerie=0;
+  Object.keys(S.pal).forEach(function(d){
+    if(d.slice(0,7)!==m) return;
+    var v=palestraDi(d); if(!v) return;
+    t.pal++; t.palSerie+=Number(v.serie)||0; t.palKcal+=kcalPalestra(v);
+  });
   Object.keys(S.indice).forEach(function(d){
     if(d.slice(0,7)!==m) return;
     var v=S.indice[d];
@@ -1107,11 +1201,13 @@ function pannelloMese(){
   /* La scheda va qui, attaccata al calendario: in fondo al pannello resterebbe
      sotto lo schermo e il tocco sembrerebbe non aver fatto niente. */
   if(S.aperto&&S.apertoDove==="cal"&&S.aperto.slice(0,7)===m){
-    h+='<div class="dett">'+dettaglioGiorno(S.apertoVoci,true,S.apertoPassi)+'</div>';
+    h+='<div class="dett">'+dettaglioGiorno(S.apertoVoci,true,S.apertoPassi,S.aperto)+'</div>';
   }
 
   if(t.n===0){
-    h+='<div class="p-piede">Nessun giorno registrato in questo mese.</div></section>';
+    h+='<div class="p-piede">'+(t.pal
+      ?t.pal+(t.pal===1?' allenamento in palestra':' allenamenti in palestra')+', ma nessun giorno di cibo registrato in questo mese.'
+      :'Nessun giorno registrato in questo mese.')+'</div></section>';
     return h;
   }
 
@@ -1131,7 +1227,11 @@ function pannelloMese(){
      '<div><div class="mini-et">Grassi medi</div><div class="cifra-m">'+num(t.g/t.n)+'<span class="unita"> g</span></div></div>'+
      (t.nPassi?'<div><div class="mini-et">Passi medi</div><div class="cifra-m">'+num(t.passi/t.nPassi)+
        '<span class="unita"> in '+t.nPassi+(t.nPassi===1?' giorno':' giorni')+'</span></div></div>':'')+
+     (t.pal?'<div><div class="mini-et">Palestra</div><div class="cifra-m">'+t.pal+
+       '<span class="unita"> '+(t.pal===1?'allenamento':'allenamenti')+' \u00b7 '+num(t.palSerie)+' serie</span></div></div>':'')+
      '</div>';
+  if(t.pal) h+='<div class="p-piede">In palestra hai speso circa '+num(t.palKcal)+' kcal nel mese, '+
+     num(t.palKcal/t.pal)+' a seduta. \u00c8 una stima e non entra nei conti qui sopra.</div>';
 
   h+='</section>';
   return h;
@@ -1166,7 +1266,7 @@ function vistaStorico(){
        '<div class="gg-d">'+dataEstesa(d)+'</div><div class="gg-m">P '+v.p+' · C '+v.c+' · G '+v.g+' · '+v.n+(v.n===1?' voce':' voci')+'</div></div>'+
        '<div class="gg-k'+(v.kcal>S.ob.kcal?" rossa":"")+'">'+v.kcal+' kcal</div></button>';
     if(S.aperto===d&&S.apertoDove!=="cal"){
-      h+='<div class="dett">'+dettaglioGiorno(S.apertoVoci,true,S.apertoPassi)+'</div>';
+      h+='<div class="dett">'+dettaglioGiorno(S.apertoVoci,true,S.apertoPassi,S.aperto)+'</div>';
     }
     h+='</div>';
   });

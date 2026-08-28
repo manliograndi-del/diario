@@ -342,6 +342,49 @@ numeri scritti nell'indirizzo. Nessun dato esce se non quando tocca il tasto.
 `https://github.com/manliograndi-del/diario/releases/download/passi/diario-passi.apk`
 Se il file non si aggiorna, guarda i log dell'azione prima di dare la colpa al telefono.
 
+## La palestra dentro il Diario
+
+Chiesta il 2026-08-28, subito dopo i passi: "assieme ai passi devi mettere anche la
+palestra prendendo i dati dalla palestra".
+
+**Non c'è nessun collegamento fra le due app, e non serve.** Diario e Palestra vivono
+sullo stesso indirizzo (`manliograndi-del.github.io`) e quindi sullo **stesso
+`localStorage`**: quella che finora era una trappola da evitare — non usare chiavi
+senza prefisso — qui diventa la strada. Il Diario apre `palestra.indice` e legge.
+Niente rete, niente sincronizzazione, niente da autorizzare. Se la Palestra non è mai
+stata aperta su questo telefono, la chiave non c'è e il pannello dice che non ti sei
+allenato.
+
+**Il Diario legge e basta: non scrive mai dentro le chiavi `palestra.`.** Se un giorno
+serve un dato nuovo, lo aggiunge la Palestra al proprio indice — è lei che conosce la
+scheda.
+
+- `S.pal` è la copia dell'indice della Palestra. `leggiPalestra()` la rilegge e dice
+  se è cambiata; gira all'avvio e **quando l'app torna in primo piano**. È lì che
+  serve davvero: lui esce dalla Palestra e rientra nel Diario, e la seduta appena
+  finita deve esserci già. Senza quel giro il pannello continuerebbe a dire "nessun
+  allenamento oggi" fino al ricaricamento.
+- **I minuti di cardio li conta la Palestra** (`minC` nel suo indice, dal 2026-08-28).
+  Il Diario non ha la `SCHEDA` e non può sapere che il tapis roulant dura 15': se
+  provi a indovinarli qui, al primo cambio di scheda il numero diventa falso.
+- **Le calorie sono una stima e non entrano nel deficit**, esattamente come per i
+  passi e per la stessa decisione sua. `kcalPalestra()` usa il conto classico
+  kcal/min = MET × 3,5 × kg / 200, con **MET 3,5 ai pesi** — quello dei circuiti *con
+  il recupero dentro*, perché fra una serie e l'altra c'è un minuto fermo e contarlo
+  come lavoro raddoppierebbe il numero — e **MET 5 al cardio**. Ogni serie vale un
+  minuto e mezzo: mezzo di lavoro e uno di recupero, che è poi il timer della
+  Palestra. Una seduta intera (34 serie + 30' di cardio, 97 kg) viene circa 560 kcal.
+  Se un giorno chiede di sommarle al fabbisogno, valgono le stesse obiezioni dei
+  passi: è una stima, e nei giorni di palestra si sommerebbe a quella della camminata.
+- Si vede in tre posti, tutti alimentati dallo stesso indice: il **pannello Palestra**
+  nella schermata Oggi (sotto la Camminata, stessa forma), la **riga di riepilogo** del
+  dettaglio di un giorno, e il **riepilogo del mese** nello Storico (allenamenti,
+  serie, kcal totali e a seduta).
+- Un giorno di sola palestra **non compare nel calendario** dello Storico: quel
+  calendario è dei giorni di cibo, e l'indice del Diario non ha quel giorno. Nei
+  totali del mese però l'allenamento è contato — si contano su `palestra.indice`,
+  non sull'indice del Diario, apposta.
+
 ## Aspetto
 
 Palette (variabili CSS in `:root`, usale, non inventare colori):
