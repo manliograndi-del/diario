@@ -327,7 +327,7 @@ var ARCHIVIO = [
 
 /* ---------- costanti e utilità ---------- */
 var K_CFG="diario.config", K_IDX="diario.indice", K_G="diario.g.";
-var OB_DEF={kcal:1500,fab:2200,p:160,c:120,g:45};
+var OB_DEF={kcal:1500,fab:2200,p:160,c:120,g:45,peso:97};
 /* Il fabbisogno è sceso da 2500 a 2200 il 2026-08-21, chiesto da Manlio.
    Cambiare la costante non basta: chi usa già l'app ha il vecchio numero
    salvato in diario.config e continuerebbe a vedere 2500. FAB_V fa la
@@ -388,6 +388,7 @@ var S={
   vista:"oggi", data:oggiISO(), voci:[], indice:{}, ob:OB_DEF, miei:[], recenti:[], tema:"auto",
   mese:null, apertoDove:"lista", finestra:null,
   drive:{on:false,id:null,ultimo:null,rev:null}, driveStato:"",
+  passi:0, apertoPassi:0,
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
   aperto:null, apertoVoci:[], export:"", importa:"", msg:null, spia:"", focus:null
@@ -406,6 +407,7 @@ function avvia(){
   S.data=oggiISO();
   var g=leggi(K_G+S.data,{voci:[]});
   S.voci=g.voci||[];
+  S.passi=Number(g.passi)||0;
   if(!memOk) S.msg="Questo browser non permette il salvataggio. Esci dalla navigazione privata.";
   render();
 }
@@ -422,9 +424,11 @@ var tSalva=null;
 function salvaOra(){
   clearTimeout(tSalva); tSalva=null;
   var t=totali(S.voci);
-  var ok=scrivi(K_G+S.data,{voci:S.voci,totali:t});
-  if(S.voci.length===0) delete S.indice[S.data];
-  else S.indice[S.data]={kcal:Math.round(t.kcal),p:Math.round(t.p),c:Math.round(t.c),g:Math.round(t.g),n:S.voci.length};
+  var ok=scrivi(K_G+S.data,{voci:S.voci,totali:t,passi:S.passi});
+  /* Un giorno con i soli passi è comunque un giorno registrato: se lo
+     cancellassimo dall'indice, la camminata sparirebbe dallo storico. */
+  if(S.voci.length===0&&!S.passi) delete S.indice[S.data];
+  else S.indice[S.data]={kcal:Math.round(t.kcal),p:Math.round(t.p),c:Math.round(t.c),g:Math.round(t.g),n:S.voci.length,passi:S.passi};
   ok=scrivi(K_IDX,S.indice)&&ok;
   return ok;
 }
@@ -458,10 +462,11 @@ function controllaData(){
   var d=oggiISO();
   if(d!==S.data){
     var t=totali(S.voci);
-    scrivi(K_G+S.data,{voci:S.voci,totali:t});
+    scrivi(K_G+S.data,{voci:S.voci,totali:t,passi:S.passi});
     S.data=d;
     var g=leggi(K_G+d,{voci:[]});
     S.voci=g.voci||[];
+    S.passi=Number(g.passi)||0;
     S.msg="È un nuovo giorno. Ieri è archiviato nello storico.";
     S.vista="oggi";
     render();
@@ -587,6 +592,19 @@ function anelli(kcal,prot,dim,spesso,conTacca){
   return s;
 }
 
+/* Le calorie della camminata, da passi e peso.
+   1400 passi ≈ un chilometro (passo di 72 cm), e si contano **0,5 kcal per
+   chilo per chilometro**: è la spesa *in più* rispetto allo stare fermi, non
+   quella lorda. Il lordo (0,9) sarebbe più bello da vedere ma conterebbe due
+   volte quello che il fabbisogno già include.
+   Deciso il 2026-08-27: questa stima **si mostra e basta**. Non entra nel
+   deficit, non entra nei grammi di grasso. Se un giorno lui vuole il
+   contrario, va detto a lui che il numero è una stima con ±30% di errore. */
+function kcalPassi(passi){
+  var pe=Number(S.ob.peso)||0;
+  if(!passi||!pe) return 0;
+  return passi/1400*pe*0.5;
+}
 var KCAL_PER_KG=7700;
 /* Il segno conta: positivo è il grasso risparmiato stando sotto il fabbisogno,
    negativo è quello messo su superandolo. Prima il conto si fermava a zero e
@@ -667,9 +685,11 @@ function ultimi7(){
 /* Dettaglio di una giornata: totali e voci raggruppate per pasto.
    Usato sia nella scheda che si apre dalla striscia dei 7 giorni,
    sia nello storico, così i due posti mostrano le stesse cose. */
-function dettaglioGiorno(voci,conRiepilogo){
+function dettaglioGiorno(voci,conRiepilogo,passi){
   voci=voci||[];
-  if(voci.length===0) return '<div class="sc-vuoto">Nessuna voce registrata in questo giorno.</div>';
+  passi=Number(passi)||0;
+  if(voci.length===0) return '<div class="sc-vuoto">'+
+    (passi?num(passi)+' passi, ma nessuna voce registrata in questo giorno.':'Nessuna voce registrata in questo giorno.')+'</div>';
   var t=totali(voci), scarto=S.ob.kcal-t.kcal, h="";
 
   if(conRiepilogo){
@@ -680,7 +700,8 @@ function dettaglioGiorno(voci,conRiepilogo){
        '<div class="cifra-m">'+num(t.p)+'<span class="unita"> / '+S.ob.p+' g</span></div></div>'+
        '</div>';
     h+='<div class="sc-macro">Carboidrati '+num(t.c)+' g \u00b7 Grassi '+num(t.g)+' g \u00b7 '+
-       voci.length+(voci.length===1?" voce":" voci")+'</div>';
+       voci.length+(voci.length===1?" voce":" voci")+
+       (passi?' \u00b7 '+num(passi)+' passi (\u2248 '+num(kcalPassi(passi))+' kcal)':'')+'</div>';
     h+='<div class="p-piede">'+(scarto>=0
        ?"Sotto l\u2019obiettivo di "+num(scarto)+" kcal"
        :"Sopra l\u2019obiettivo di "+num(-scarto)+" kcal")+'</div>';
@@ -788,10 +809,25 @@ function vistaOggi(){
     h+='<section class="pannello"><div class="p-testa">'+
        '<span class="etichetta">Cosa hai mangiato</span>'+
        (passato?"":'<button class="sc-chiudi" data-az="apri" data-d="'+aperto+'">chiudi</button>')+
-       '</div>'+dettaglioGiorno(voci,false)+'</section>';
+       '</div>'+dettaglioGiorno(voci,false,pa)+'</section>';
   }
 
   h+='<section class="coppia">'+mini("Carboidrati",t.c,S.ob.c)+mini("Grassi",t.g,S.ob.g)+'</section>';
+
+  /* La camminata sta qui sotto e **non tocca i numeri di sopra**: è una cosa
+     che hai fatto, non un permesso di mangiare di più. Deciso con lui. */
+  var pa=passato?S.apertoPassi:S.passi;
+  h+='<section class="pannello"><div class="p-testa"><span class="etichetta">Camminata</span>'+
+     (pa?'<span class="g-kcal">\u2248 '+num(kcalPassi(pa))+' kcal</span>':'')+'</div>';
+  if(passato){
+    h+='<div class="cifra-m">'+(pa?num(pa)+'<span class="unita"> passi</span>':'<span class="unita">nessun passo segnato</span>')+'</div>';
+  } else {
+    h+='<div class="qta" style="margin-top:12px">'+
+       '<input class="campo-qta" data-in="passi" type="number" inputmode="numeric" value="'+(S.passi||"")+'" placeholder="0">'+
+       '<span class="u">passi</span></div>'+
+       '<div class="nota">Il numero lo copi da Google Fit. \u00c8 una stima: non entra nel deficit e non cambia i grammi di grasso.</div>';
+  }
+  h+='</section>';
 
   // un giorno passato non si modifica: niente pulsante e niente elenco con "togli"
   if(passato) return h;
@@ -940,11 +976,12 @@ function meseSposta(m,n){
 }
 function meseEsteso(m){ var a=m.split("-").map(Number); return MM[a[1]-1]+" "+a[0]; }
 function datiMese(m){
-  var t={n:0,kcal:0,p:0,c:0,g:0,persi:0,presi:0,sotto:0};
+  var t={n:0,kcal:0,p:0,c:0,g:0,persi:0,presi:0,sotto:0,passi:0,nPassi:0};
   Object.keys(S.indice).forEach(function(d){
     if(d.slice(0,7)!==m) return;
     var v=S.indice[d];
     t.n++; t.kcal+=v.kcal; t.p+=v.p; t.c+=v.c; t.g+=v.g;
+    if(v.passi){ t.passi+=v.passi; t.nPassi++; }
     t.persi+=grammiPersi(v.kcal); t.presi+=grammiSopra(v.kcal);
     if(v.kcal<=S.ob.kcal) t.sotto++;
   });
@@ -995,7 +1032,7 @@ function pannelloMese(){
   /* La scheda va qui, attaccata al calendario: in fondo al pannello resterebbe
      sotto lo schermo e il tocco sembrerebbe non aver fatto niente. */
   if(S.aperto&&S.apertoDove==="cal"&&S.aperto.slice(0,7)===m){
-    h+='<div class="dett">'+dettaglioGiorno(S.apertoVoci,true)+'</div>';
+    h+='<div class="dett">'+dettaglioGiorno(S.apertoVoci,true,S.apertoPassi)+'</div>';
   }
 
   if(t.n===0){
@@ -1017,6 +1054,8 @@ function pannelloMese(){
      '<div><div class="mini-et">Proteine medie</div><div class="cifra-m">'+num(t.p/t.n)+'<span class="unita"> / '+S.ob.p+' g</span></div></div>'+
      '<div><div class="mini-et">Carboidrati medi</div><div class="cifra-m">'+num(t.c/t.n)+'<span class="unita"> g</span></div></div>'+
      '<div><div class="mini-et">Grassi medi</div><div class="cifra-m">'+num(t.g/t.n)+'<span class="unita"> g</span></div></div>'+
+     (t.nPassi?'<div><div class="mini-et">Passi medi</div><div class="cifra-m">'+num(t.passi/t.nPassi)+
+       '<span class="unita"> in '+t.nPassi+(t.nPassi===1?' giorno':' giorni')+'</span></div></div>':'')+
      '</div>';
 
   h+='</section>';
@@ -1052,7 +1091,7 @@ function vistaStorico(){
        '<div class="gg-d">'+dataEstesa(d)+'</div><div class="gg-m">P '+v.p+' · C '+v.c+' · G '+v.g+' · '+v.n+(v.n===1?' voce':' voci')+'</div></div>'+
        '<div class="gg-k'+(v.kcal>S.ob.kcal?" rossa":"")+'">'+v.kcal+' kcal</div></button>';
     if(S.aperto===d&&S.apertoDove!=="cal"){
-      h+='<div class="dett">'+dettaglioGiorno(S.apertoVoci,true)+'</div>';
+      h+='<div class="dett">'+dettaglioGiorno(S.apertoVoci,true,S.apertoPassi)+'</div>';
     }
     h+='</div>';
   });
@@ -1061,11 +1100,11 @@ function vistaStorico(){
 
 function vistaImpostazioni(){
   var h='<section class="pannello"><div class="etichetta">Obiettivi giornalieri</div><div class="griglia">';
-  [["kcal","Obiettivo kcal"],["fab","Fabbisogno kcal"],["p","Proteine (g)"],["c","Carboidrati (g)"],["g","Grassi (g)"]].forEach(function(x){
+  [["kcal","Obiettivo kcal"],["fab","Fabbisogno kcal"],["p","Proteine (g)"],["c","Carboidrati (g)"],["g","Grassi (g)"],["peso","Il tuo peso (kg)"]].forEach(function(x){
     h+='<div><div class="mini-et">'+x[1]+'</div><input class="campo" data-in="ob-'+x[0]+
        '" type="number" inputmode="numeric" value="'+S.ob[x[0]]+'"></div>';
   });
-  h+='</div><div class="nota">Si salvano appena li modifichi. Il <strong>fabbisogno</strong> è la scala dell\'anello esterno: l\'arco che resta vuoto è il deficit della giornata. L\'<strong>obiettivo</strong> è la tacca nera.</div></section>';
+  h+='</div><div class="nota">Si salvano appena li modifichi. Il <strong>fabbisogno</strong> è la scala dell\'anello esterno: l\'arco che resta vuoto è il deficit della giornata. L\'<strong>obiettivo</strong> è la tacca nera. Il <strong>peso</strong> serve solo a stimare le calorie della camminata.</div></section>';
 
   h+='<section class="pannello"><div class="etichetta">I miei alimenti ('+S.miei.length+')</div>';
   if(S.miei.length===0) h+='<div class="nota">Quello che inserisci a mano o componi come ricetta puoi salvarlo qui, e la volta dopo lo ritrovi cercandolo.</div>';
@@ -1176,7 +1215,11 @@ document.getElementById("app").addEventListener("click",function(ev){
     /* Chiudere il giorno vuol dire tornare a oggi: la striscia, se era
        arretrata, torna a finire su oggi insieme al resto. */
     if(chiude){S.aperto=null;S.finestra=null;}
-    else {S.aperto=d;S.apertoDove=dove;S.apertoVoci=(leggi(K_G+d,{voci:[]}).voci)||[];}
+    else {
+      S.aperto=d; S.apertoDove=dove;
+      var gg=leggi(K_G+d,{voci:[]});
+      S.apertoVoci=gg.voci||[]; S.apertoPassi=Number(gg.passi)||0;
+    }
     render();
   }
   else if(az==="mese"){ S.mese=meseSposta(S.mese||meseDiOggi(),Number(v)); S.aperto=null; render(); }
@@ -1255,6 +1298,7 @@ document.getElementById("app").addEventListener("input",function(ev){
   S.focus=k;
   if(k==="cerca"){ S.cerca=e.value; render(); }
   else if(k==="grammi"){ S.grammi=Math.max(0,Number(e.value)); render(); }
+  else if(k==="passi"){ S.passi=Math.max(0,Math.round(Number(e.value)||0)); salva(); render(); }
   else if(k==="importa"){ S.importa=e.value; }
   else if(k==="ricNome"){ S.ricNome=e.value; }
   else if(k.indexOf("ric")===0){ var i=Number(k.slice(3)); if(S.ric[i]){S.ric[i].gr=Number(e.value)||0; render();} }

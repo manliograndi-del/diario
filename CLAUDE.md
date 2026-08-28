@@ -78,7 +78,10 @@ il vecchio indirizzo con la D maiuscola non vale più).
   quando è partita l'ultima copia. **Il permesso di Google non si salva mai**: vive in
   memoria (`GTOK`), dura un'ora e si richiede quando serve.
 - `diario.indice` → `{"2026-08-17": {kcal,p,c,g,n}, ...}` — riepiloghi per lo storico
-- `diario.g.YYYY-MM-DD` → `{voci:[...], totali:{...}}` — un file per giorno
+- `diario.g.YYYY-MM-DD` → `{voci:[...], totali:{...}, passi}` — un file per giorno
+  `passi` c'è anche dentro `diario.indice`, così lo storico li mostra senza aprire
+  ogni giorno. **Un giorno con i soli passi resta nell'indice**: se lo cancellassimo
+  perché non ha voci, la camminata sparirebbe dallo storico.
 
 **Attenzione, questo è controintuitivo:** sull'origine `manliograndi-del.github.io` vive
 anche l'app Palestra, e le due condividono lo stesso `localStorage`. La separazione è
@@ -124,6 +127,18 @@ Non ribaltarle senza dirglielo esplicitamente.
   Il gradiente **non è monotòno di proposito**: un gradiente che diventa sempre più
   verde man mano che mangi meno premierebbe il non mangiare. Se chiede di renderlo
   monotòno, fallo, ma ricordagli perché era così.
+- **I passi si scrivono a mano, copiandoli da Google Fit** (chiesto il 2026-08-27).
+  Nessuna app web può leggere Fit o Health Connect: le porte sono chiuse ai siti e
+  quelle di Fit chiudono del tutto a fine 2026. Il campo sta nella schermata Oggi;
+  per i giorni passati il numero si vede ma non si tocca, come le voci.
+  **La stima delle calorie non entra nel deficit e non tocca i grammi di grasso**:
+  decisione sua, presa sapendo che sommarle avrebbe reso il deficit più bello e meno
+  vero. `kcalPassi()` conta 1400 passi per chilometro e **0,5 kcal per chilo per
+  chilometro** — la spesa *in più* rispetto allo stare fermi, non quella lorda, che
+  conterebbe due volte quello che il fabbisogno già include. Il peso (97 kg) sta in
+  `ob.peso` e serve **solo** a questo.
+  Se un giorno chiede di sommarle al fabbisogno, ricordagli che la stima ha ±30% di
+  errore e che nei giorni di palestra il conto si sovrapporrebbe a quello.
 - **La striscia dei 7 giorni** mostra i giorni di calendario, non i 7 registrati. Le
   medie si calcolano solo sui giorni con dati, così un giorno saltato non abbassa la media.
   Dal 2026-08-22 è una **finestra che scorre**: di norma finisce su oggi (`S.finestra`
@@ -301,7 +316,7 @@ Non aggiungere ombre, sfumature o animazioni decorative.
 
 ## Prima di chiudere una sessione
 
-1. **Alza il numero di versione della cache in `sw.js`** (`diario-v22` → `diario-v23`).
+1. **Alza il numero di versione della cache in `sw.js`** (`diario-v23` → `diario-v24`).
    Dal 2026-08-18 il service worker chiede la pagina prima alla rete, quindi una
    versione nuova arriva con un ricaricamento solo; il numero di cache va alzato
    lo stesso, governa la copia di riserva usata offline.
