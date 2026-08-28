@@ -5,7 +5,7 @@
    github.io vive anche l'app Palestra e le due si cancellerebbero
    la cache a vicenda. Alza il numero di versione a ogni rilascio. */
 const PREFISSO = "diario-";
-const CACHE = PREFISSO + "v25";
+const CACHE = PREFISSO + "v26";
 /* I cerchi della barra in alto: uno ogni 5%, più quello di quando si sfora.
    Vanno in cache come gli altri file, altrimenti in aereo la notifica
    resterebbe senza disegno. */
@@ -38,6 +38,83 @@ function conserva(richiesta, risposta) {
   return risposta;
 }
 
+/* ---------- i due anelli, disegnati qui dentro ----------
+   Servono all'immagine grande della notifica: tirando giù la tendina si vedono
+   gli stessi due cerchi della schermata Oggi, colori compresi.
+   Non possono essere file già pronti come i cerchi della barra: le
+   combinazioni di calorie e proteine sono troppe. E non può disegnarli la
+   pagina, perché le immagini della notifica le va a prendere il browser da un
+   indirizzo, anche quando l'app è chiusa. Le prende **da qui**: è provato che
+   la richiesta passa dal service worker, e OffscreenCanvas sa disegnare.
+
+   La tavolozza è copiata da quella di `index.html`: qui dentro le variabili
+   CSS non esistono. **Se cambi i colori di là, cambiali anche qui**, o gli
+   anelli della notifica smetteranno di somigliare a quelli dell'app. */
+const TAVOLOZZA = {
+  chiaro: { carta:"#E9ECE6", inchiostro:"#141B18", tenue:"#5B6661",
+            traccia:"#E4E8E1", blu:"#1F4A6B", senape:"#C08411", rosso:"#A3341F" },
+  scuro:  { carta:"#121614", inchiostro:"#E6EBE7", tenue:"#96A29C",
+            traccia:"#2A322F", blu:"#6FA8CE", senape:"#D9A441", rosso:"#D9694B" }
+};
+
+function arco(x, cx, cy, r, spesso, colore, quota) {
+  if (quota <= 0) return;
+  x.strokeStyle = colore; x.lineWidth = spesso; x.lineCap = "round";
+  x.beginPath();
+  x.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, quota));
+  x.stroke();
+}
+
+async function disegnaAnelli(u) {
+  const n = (k, d) => { const v = Number(u.searchParams.get(k)); return isFinite(v) && v > 0 ? v : d; };
+  const kcal = Math.max(0, Number(u.searchParams.get("k")) || 0);
+  const fab = n("f", 2200), obK = n("ok", 1500);
+  const prot = Math.max(0, Number(u.searchParams.get("p")) || 0), obP = n("op", 160);
+  const C = TAVOLOZZA[u.searchParams.get("t") === "scuro" ? "scuro" : "chiaro"];
+
+  const W = 1024, H = 512, c = new OffscreenCanvas(W, H), x = c.getContext("2d");
+  x.fillStyle = C.carta; x.fillRect(0, 0, W, H);
+
+  /* gli anelli: fuori le calorie sul fabbisogno, dentro le proteine.
+     Stessa disposizione della schermata Oggi, non un'altra invenzione. */
+  const cx = 262, cy = 256, spesso = 34, R = 186, r = R - spesso - 6;
+  x.strokeStyle = C.traccia; x.lineWidth = spesso; x.lineCap = "butt";
+  x.beginPath(); x.arc(cx, cy, R, 0, Math.PI * 2); x.stroke();
+  x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.stroke();
+  arco(x, cx, cy, R, spesso, kcal > fab ? C.rosso : C.blu, kcal / fab);
+  arco(x, cx, cy, r, spesso, C.senape, prot / obP);
+
+  /* la tacca dell'obiettivo, come nell'app */
+  const a = (-90 + 360 * Math.min(1, obK / fab)) * Math.PI / 180;
+  x.strokeStyle = C.inchiostro; x.lineWidth = 5; x.lineCap = "round";
+  x.beginPath();
+  x.moveTo(cx + (R - spesso / 2 - 4) * Math.cos(a), cy + (R - spesso / 2 - 4) * Math.sin(a));
+  x.lineTo(cx + (R + spesso / 2 + 4) * Math.cos(a), cy + (R + spesso / 2 + 4) * Math.sin(a));
+  x.stroke();
+
+  /* i numeri, a destra */
+  const sx = 540;
+  x.textBaseline = "alphabetic";
+  x.fillStyle = C.tenue; x.font = "600 26px system-ui, sans-serif";
+  x.fillText("CALORIE", sx, 150);
+  x.fillStyle = kcal > fab ? C.rosso : C.blu; x.font = "700 92px system-ui, sans-serif";
+  const nk = x.measureText(String(Math.round(kcal))).width;
+  x.fillText(String(Math.round(kcal)), sx, 232);
+  x.fillStyle = C.tenue; x.font = "400 34px system-ui, sans-serif";
+  x.fillText(" di " + Math.round(fab), sx + nk, 232);
+
+  x.fillStyle = C.tenue; x.font = "600 26px system-ui, sans-serif";
+  x.fillText("PROTEINE", sx, 340);
+  x.fillStyle = C.senape; x.font = "700 92px system-ui, sans-serif";
+  const np = x.measureText(String(Math.round(prot))).width;
+  x.fillText(String(Math.round(prot)), sx, 422);
+  x.fillStyle = C.tenue; x.font = "400 34px system-ui, sans-serif";
+  x.fillText(" di " + Math.round(obP) + " g", sx + np, 422);
+
+  const b = await c.convertToBlob({ type: "image/png" });
+  return new Response(b, { headers: { "Content-Type": "image/png", "Cache-Control": "no-store" } });
+}
+
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
 
@@ -46,6 +123,17 @@ self.addEventListener("fetch", (e) => {
      sarebbe presa in cambio la pagina dell'app, e chi l'ha chiamata avrebbe
      letto HTML al posto della risposta. */
   if (new URL(e.request.url).origin !== self.location.origin) return;
+
+  /* Il disegno degli anelli non è un file: si fa qui, ogni volta, sui numeri
+     che arrivano nell'indirizzo. Dopo il controllo dell'origine, così resta
+     roba nostra e nostra soltanto. */
+  {
+    const u = new URL(e.request.url);
+    if (u.pathname.indexOf("/anelli.png") >= 0) {
+      e.respondWith(disegnaAnelli(u).catch(() => new Response("", { status: 204 })));
+      return;
+    }
+  }
 
   /* La pagina viene chiesta prima alla rete: è tutta l'app, e servirla
      dalla cache significava mostrare per giorni una versione vecchia,

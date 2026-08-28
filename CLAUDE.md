@@ -424,6 +424,32 @@ nuova prende il posto della vecchia invece di accodarsi.
   Toccandola si torna al Diario (`notificationclick` in `sw.js`), senza aprirne
   una seconda copia.
 
+**Tirando giù la tendina ci sono i due anelli veri** (chiesti il 2026-08-28: lui
+aveva chiesto un widget con "i due cerchi delle calorie e delle proteine"). Sono
+l'immagine grande della notifica, disegnata **dentro il service worker** con
+`OffscreenCanvas` e servita a `anelli.png?k=…&f=…&p=…`.
+
+- **Un widget vero sulla schermata Home non si può fare, e non è una pigrizia.**
+  I widget li può dare solo un'app Android installata, e i numeri del Diario
+  vivono dentro il browser: un'app non li vede. L'unico ponte pagina→app è
+  aprire un indirizzo, cioè saltare visibilmente da un'app all'altra, e farlo a
+  ogni voce di cibo sarebbe peggio del male. Se lo richiede, la risposta onesta
+  è ancora questa.
+- **Che il disegno passi dal service worker è stato provato**, non dedotto: una
+  prova apposta ha mostrato che le richieste di `image`, `icon` e `badge` di una
+  notifica **passano dal `fetch` del service worker**. È il motivo per cui
+  funziona anche ad app chiusa, e senza rete.
+- Non potevano essere file già pronti come i cerchi della barra: le
+  combinazioni di calorie e proteine sono troppe. E non poteva disegnarli la
+  pagina: l'immagine se la va a prendere il browser da un indirizzo.
+- **La tavolozza in `sw.js` è una copia di quella di `index.html`**, perché lì
+  dentro le variabili CSS non esistono. Se cambi i colori di là, cambiali anche
+  qui, o gli anelli della notifica smetteranno di somigliare a quelli dell'app.
+  Il disegno segue anche il tema chiaro/scuro dell'ora, che gli arriva
+  nell'indirizzo.
+- Nell'indirizzo c'è anche `&v=<ora>`: senza, il browser riuserebbe l'immagine
+  di prima e la notifica mostrerebbe numeri vecchi.
+
 ## Aspetto
 
 Palette (variabili CSS in `:root`, usale, non inventare colori):

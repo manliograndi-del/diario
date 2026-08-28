@@ -457,12 +457,19 @@ function cerchioSiPuo(){ return ("Notification" in window) && !!navigator.servic
 function aggiornaCerchio(){
   if(!S.cerchio||!cerchioSiPuo()||Notification.permission!=="granted") return;
   var t=totali(S.voci), ob=Math.max(1,S.ob.kcal), q=t.kcal/ob, rest=S.ob.kcal-t.kcal;
+  /* L'indirizzo del disegno: non è un file, lo compone il service worker sui
+     numeri che gli passiamo qui. La data ci va dentro apposta, perché un
+     indirizzo identico verrebbe ripreso dalla memoria del browser e la
+     notifica mostrerebbe il disegno di prima. */
+  var img="anelli.png?k="+Math.round(t.kcal)+"&f="+S.ob.fab+"&ok="+S.ob.kcal+
+          "&p="+Math.round(t.p)+"&op="+S.ob.p+"&t="+(temaScuro()?"scuro":"chiaro")+
+          "&v="+Date.now();
   navigator.serviceWorker.ready.then(function(reg){
     return reg.showNotification(num(t.kcal)+" di "+S.ob.kcal+" kcal",{
       tag:CERCHIO_TAG, renotify:false, silent:true,
-      badge:cerchioFile(q), icon:"icon-192.png",
+      badge:cerchioFile(q), icon:"icon-192.png", image:img,
       body:(rest>=0?"Ti restano "+num(rest)+" kcal":"Sei sopra di "+num(-rest)+" kcal")+
-           " \u00b7 "+Math.round(q*100)+"% dell\u2019obiettivo"
+           " \u00b7 "+num(t.p)+" g di proteine su "+S.ob.p
     });
   }).catch(function(){});
 }
