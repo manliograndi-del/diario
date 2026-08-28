@@ -127,10 +127,12 @@ Non ribaltarle senza dirglielo esplicitamente.
   Il gradiente **non è monotòno di proposito**: un gradiente che diventa sempre più
   verde man mano che mangi meno premierebbe il non mangiare. Se chiede di renderlo
   monotòno, fallo, ma ricordagli perché era così.
-- **I passi si scrivono a mano, copiandoli da Google Fit** (chiesto il 2026-08-27).
-  Nessuna app web può leggere Fit o Health Connect: le porte sono chiuse ai siti e
-  quelle di Fit chiudono del tutto a fine 2026. Il campo sta nella schermata Oggi;
-  per i giorni passati il numero si vede ma non si tocca, come le voci.
+- **I passi si scrivono a mano** (chiesto il 2026-08-27), **oppure arrivano dall'app
+  "Diario passi"** (dal 2026-08-28, vedi più sotto). Nessuna pagina web può leggere Fit
+  o Health Connect: le porte sono chiuse ai siti e quelle di Fit chiudono del tutto a
+  fine 2026 — per questo il numero o lo batte lui o glielo porta un'app Android.
+  Il campo sta nella schermata Oggi; per i giorni passati il numero si vede ma non si
+  tocca, come le voci.
   **La stima delle calorie non entra nel deficit e non tocca i grammi di grasso**:
   decisione sua, presa sapendo che sommarle avrebbe reso il deficit più bello e meno
   vero. `kcalPassi()` conta 1400 passi per chilometro e **0,5 kcal per chilo per
@@ -299,6 +301,47 @@ Non ribaltarle senza dirglielo esplicitamente.
   legge `temaScuro()`. Se aggiungi un colore fisso, al buio sparisce.
 - L'archivio conta ~125 alimenti italiani con valori per 100 g. Aggiungerne è sicuro.
 
+## L'app che legge i passi — cartella `passi/`
+
+Fatta il 2026-08-28, quando Manlio ha detto la cosa che sapevamo tutti e due:
+scrivere i passi a mano ogni giorno gli sarebbe costato e avrebbe smesso di farlo.
+
+Kotlin, niente Compose, interfaccia costruita a mano con le View: le stesse scelte
+dell'app da polso della Palestra, e per la stessa ragione — **quel codice qui non si
+può provare**, in questa sessione non c'è l'SDK di Android, quindi meno pezzi ci sono
+meno cose si rompono. La compilazione la fa GitHub.
+
+Fa **una cosa sola**: chiede il permesso di leggere i passi, legge gli ultimi 7 giorni
+da Health Connect, li mostra, e quando lui tocca "Manda al Diario" apre il Diario con i
+numeri scritti nell'indirizzo. Nessun dato esce se non quando tocca il tasto.
+
+    #passi=1;2026-08-27:8412,2026-08-26:5130
+    versione ; data:passi , data:passi …
+
+- **Il collegamento va in un senso solo**, come per l'orologio: l'app racconta, il
+  Diario decide. Il Diario mostra un riquadro di conferma con l'elenco dei giorni e
+  "(era N)" dove il numero cambierebbe, e **registra soltanto i passi**: le voci di
+  cibo non le tocca (`passiRegistra()`). L'indirizzo si ripulisce subito dopo
+  (`pulisciPassi`), altrimenti un ricaricamento riproporrebbe gli stessi giorni a
+  distanza di settimane. C'è l'ascolto su `hashchange`: ad app già aperta il telefono
+  non ricarica la pagina, cambia solo l'indirizzo.
+- **I passi si leggono aggregati per giorno** (`aggregateGroupByPeriod` con
+  `StepsRecord.COUNT_TOTAL`). Se il telefono e un orologio scrivono tutti e due nello
+  stesso magazzino, sommare i singoli record li conterebbe due volte. Non sostituirlo
+  con una lettura dei record grezzi.
+- **Un permesso solo**, `android.permission.health.READ_STEPS`. Non allargarlo: è
+  quello che gli ho promesso e l'unico che serve.
+- Fit deve **condividere con Health Connect**: se l'app dice "non ho passi degli ultimi
+  giorni", è quasi sempre quello, non un errore dell'app.
+- **La libreria `connect-client` pretende strumenti recenti**: plugin Android 8.6.1 e
+  `compileSdk 35` (il primo tentativo con 8.5.2 e 34 si è fermato lì). `targetSdk`
+  resta 34: è il telefono a cui parla, non il compilatore.
+
+**La compilazione la fa GitHub** (`.github/workflows/passi.yml`) a ogni modifica dentro
+`passi/`, e pubblica sempre allo stesso indirizzo:
+`https://github.com/manliograndi-del/diario/releases/download/passi/diario-passi.apk`
+Se il file non si aggiorna, guarda i log dell'azione prima di dare la colpa al telefono.
+
 ## Aspetto
 
 Palette (variabili CSS in `:root`, usale, non inventare colori):
@@ -345,3 +388,5 @@ con le stringhe di classe scritte nel JavaScript.
 - `sw.js` — funzionamento offline; il numero di cache va alzato a ogni rilascio
 - `manifest.webmanifest` — installazione sulla schermata Home
 - `icon-192.png`, `icon-512.png` — icone
+- `passi/` — l'app Android che legge i passi da Health Connect (Kotlin, la compila GitHub)
+- `.github/workflows/passi.yml` — la fabbrica dell'APK dei passi
