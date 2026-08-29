@@ -68,6 +68,10 @@ input,textarea{font-family:inherit}
 .pannello{background:var(--superficie);border:1px solid var(--linea);border-radius:3px;padding:16px}
 .pannello.mini{padding:13px}
 .coppia{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* senza questo le due carte si allargano per stare dietro al contenuto e la
+   pagina scorre di lato: nella griglia il minimo di una colonna è il suo
+   contenuto, non zero. */
+.coppia>*{min-width:0}
 .p-testa{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .p-piede{font-size:12.5px;color:var(--tenue);margin-top:11px}
 .etichetta{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--tenue)}
@@ -129,6 +133,21 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 .passo:active{background:var(--inchiostro);color:var(--su-inchiostro)}
 .campo-qta{flex:1;padding:13px;font-size:19px;font-weight:700;text-align:center;border:1px solid var(--linea);border-radius:3px;background:var(--superficie);color:var(--inchiostro);min-width:0}
 .u{font-size:14px;color:var(--tenue)}
+/* Le due carte di quello che hai bruciato, affiancate come Carboidrati e
+   Grassi: il cerchio dice a occhio quanto, il numero dice quanto esattamente. */
+.brucia .br-riga{display:flex;align-items:center;gap:10px;margin-top:9px}
+.br-svg{width:46px;height:46px;flex:none}
+.br-txt{min-width:0}
+.br-n{font-size:19px;font-weight:700;line-height:1.05;letter-spacing:-.02em;white-space:nowrap}
+.br-n .unita{font-size:10.5px;font-weight:500;color:var(--tenue);letter-spacing:0}
+.br-vuoto{font-size:12px;color:var(--tenue);line-height:1.25}
+.brucia .g-kcal{display:block;margin-top:4px}
+.br-in{width:4.4ch;padding:0 0 2px;border:0;border-bottom:1.5px solid var(--linea);border-radius:0;
+  background:transparent;color:var(--inchiostro);font-family:inherit;font-size:19px;font-weight:700;
+  letter-spacing:-.02em;-webkit-appearance:none;appearance:none}
+.br-in:focus{outline:none;border-bottom-color:var(--blu)}
+.br-coda{font-size:11px;color:var(--tenue);margin-top:9px;line-height:1.3}
+.nota-coppia{margin-top:10px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
 .chip{padding:8px 12px;border:1px solid var(--linea);border-radius:20px;font-size:13px;background:var(--superficie)}
 .chip.on{background:var(--inchiostro);color:var(--su-inchiostro);border-color:var(--inchiostro)}
@@ -531,6 +550,35 @@ function kcalPalestra(v){
   var q=function(met,min){ return met*3.5*pe/200*min; };
   return q(MET_PESI,(Number(v.serie)||0)*MIN_PER_SERIE)+q(MET_CARDIO,Number(v.minC)||0);
 }
+/* ---------- quello che hai bruciato: camminata e palestra ----------
+   Stanno affiancate come Carboidrati e Grassi, chiesto il 2026-08-28: due
+   riquadri interi uno sotto l'altro occupavano mezza schermata per due numeri.
+
+   **I due cerchi hanno la stessa scala**, se no confrontarli a occhio non
+   vorrebbe dire niente: 600 kcal riempiono il cerchio, che è più o meno una
+   seduta di palestra intera o una camminata molto lunga.
+   La superficie cresce col numero, non il raggio: l'occhio di un cerchio legge
+   l'area, e col raggio una giornata da 100 kcal sarebbe un puntino invisibile
+   invece di un sesto di quella piena. */
+var RIF_BRUCIATE=600;
+function discoBruciate(kcal){
+  var D=46, c=D/2, Rmax=c-1;
+  var r=Rmax*Math.sqrt(Math.min(1,Math.max(0,kcal)/RIF_BRUCIATE));
+  var v='<svg class="br-svg" viewBox="0 0 '+D+' '+D+'" aria-hidden="true">';
+  v+='<circle cx="'+c+'" cy="'+c+'" r="'+Rmax+'" style="fill:var(--traccia);stroke:var(--linea)" stroke-width="1"/>';
+  if(r>0.8) v+='<circle cx="'+c+'" cy="'+c+'" r="'+r.toFixed(1)+'" style="fill:var(--verde)"/>';
+  return v+'</svg>';
+}
+function cartaBruciate(et,kcal,numero,coda){
+  return '<div class="pannello mini brucia"><div class="etichetta">'+et+'</div>'+
+    '<div class="br-riga">'+discoBruciate(kcal)+
+      '<div class="br-txt">'+numero+
+      (kcal>0?'<div class="g-kcal">\u2248 '+num(kcal)+' kcal</div>':'')+
+      '</div></div>'+(coda||'')+'</div>';
+}
+function brNum(n,unita){ return '<div class="br-n">'+num(n)+'<span class="unita"> '+unita+'</span></div>'; }
+function brVuoto(t){ return '<div class="br-vuoto">'+t+'</div>'; }
+
 /* Una riga sola che racconta la seduta, usata in più posti. */
 function rigaPalestra(v,senzaSerie){
   var p=[];
@@ -1047,36 +1095,25 @@ function vistaOggi(){
 
   h+='<section class="coppia">'+mini("Carboidrati",t.c,S.ob.c)+mini("Grassi",t.g,S.ob.g)+'</section>';
 
-  /* La camminata sta qui sotto e **non tocca i numeri di sopra**: è una cosa
-     che hai fatto, non un permesso di mangiare di più. Deciso con lui. */
+  /* Camminata e palestra stanno affiancate e **non toccano i numeri di sopra**:
+     sono cose che hai fatto, non un permesso di mangiare di più. Deciso con lui. */
   var pa=passato?S.apertoPassi:S.passi;
-  h+='<section class="pannello"><div class="p-testa"><span class="etichetta">Camminata</span>'+
-     (pa?'<span class="g-kcal">\u2248 '+num(kcalPassi(pa))+' kcal</span>':'')+'</div>';
-  if(passato){
-    h+='<div class="cifra-m">'+(pa?num(pa)+'<span class="unita"> passi</span>':'<span class="unita">nessun passo segnato</span>')+'</div>';
-  } else {
-    h+='<div class="qta" style="margin-top:12px">'+
-       '<input class="campo-qta" data-in="passi" type="number" inputmode="numeric" value="'+(S.passi||"")+'" placeholder="0">'+
-       '<span class="u">passi</span></div>'+
-       '<div class="nota">Il numero lo copi da Google Fit. \u00c8 una stima: non entra nel deficit e non cambia i grammi di grasso.</div>';
-  }
-  h+='</section>';
-
-  /* La palestra sta qui accanto alla camminata, e vale lo stesso patto: si
-     mostra e basta. I dati non li scrive lui e non li scrive il Diario —
-     arrivano dall'app della Palestra, che salva sullo stesso telefono. */
   var gg=aperto||S.data, pal=palestraDi(gg);
-  h+='<section class="pannello"><div class="p-testa"><span class="etichetta">Palestra</span>'+
-     (pal?'<span class="g-kcal">\u2248 '+num(kcalPalestra(pal))+' kcal</span>':'')+'</div>';
-  if(pal){
-    h+='<div class="cifra-m">'+pal.serie+'<span class="unita"> serie'+(pal.tot?' su '+pal.tot:'')+'</span></div>'+
-       '<div class="nota">'+(rigaPalestra(pal,true)?rigaPalestra(pal,true)+'. ':'')+
-       'Stima delle calorie: non entra nel deficit e non cambia i grammi di grasso.</div>';
-  } else {
-    h+='<div class="cifra-m"><span class="unita">'+(passato?'nessun allenamento in questo giorno':'nessun allenamento oggi')+'</span></div>'+
-       '<div class="nota">Le sedute arrivano da sole dall\u2019app Palestra: quello che spunti l\u00ec compare qui.</div>';
-  }
-  h+='</section>';
+  /* Sul giorno di oggi il numero dei passi **è** la casella dove si scrivono:
+     ripeterlo sopra e sotto sarebbe lo stesso numero due volte in un riquadro
+     largo mezzo schermo. La riga sotto lo dice che si può toccare. */
+  var camm=passato
+    ? (pa>0?brNum(pa,"passi"):brVuoto("nessun passo segnato"))
+    : '<div class="br-n"><input class="br-in" data-in="passi" type="number" inputmode="numeric" value="'+
+      (S.passi||"")+'" placeholder="0"><span class="unita"> passi</span></div>';
+  h+='<section class="coppia">'+
+     cartaBruciate("Camminata",kcalPassi(pa),camm)+
+     cartaBruciate("Palestra",pal?kcalPalestra(pal):0,
+       pal?brNum(pal.serie,"serie")
+          :brVuoto("nessun allenamento"),
+       pal?'<div class="br-coda">'+(pal.tot?"su "+pal.tot+" \u00b7 ":"")+rigaPalestra(pal,true)+'</div>':'')+
+     '</section>'+
+     '<div class="nota nota-coppia"><strong>I passi si scrivono toccando il numero</strong>, oppure te li manda l\u2019app dei passi; la palestra arriva da sola dall\u2019app Palestra. Le calorie sono stime: non entrano nel deficit e non cambiano i grammi di grasso.</div>';
 
   // un giorno passato non si modifica: niente pulsante e niente elenco con "togli"
   if(passato) return h;

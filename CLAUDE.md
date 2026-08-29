@@ -359,6 +359,30 @@ numeri scritti nell'indirizzo. Nessun dato esce se non quando tocca il tasto.
 `https://github.com/manliograndi-del/diario/releases/download/passi/diario-passi.apk`
 Se il file non si aggiorna, guarda i log dell'azione prima di dare la colpa al telefono.
 
+## Camminata e palestra: due carte affiancate
+
+Dal 2026-08-28 non sono più due riquadri interi uno sotto l'altro, ma **due
+carte affiancate come Carboidrati e Grassi** (`cartaBruciate`). L'ha chiesto
+lui: due pannelli larghi tutto lo schermo per due numeri erano mezza schermata
+buttata.
+
+Dentro ogni carta: un **cerchio pieno grande quanto le calorie bruciate**, e di
+fianco il numero (passi o serie) con le calorie sotto.
+
+- **I due cerchi hanno la stessa scala** — `RIF_BRUCIATE`, 600 kcal riempiono il
+  cerchio — se no confrontarli a occhio non vorrebbe dire niente. È il punto di
+  tutto il disegno: si vede *quale dei due ha pesato di più* senza leggere.
+- **Cresce l'area, non il raggio** (`Math.sqrt`): di un cerchio l'occhio legge
+  la superficie, e col raggio una giornata da 100 kcal sarebbe un puntino
+  invisibile invece di un sesto di quella piena.
+- **Sul giorno di oggi il numero dei passi è la casella dove si scrivono**
+  (`.br-in`, sottolineata per dire che si tocca). Prima c'era il numero grande
+  e sotto la casella con lo stesso numero: in un riquadro largo mezzo schermo
+  era lo stesso dato due volte.
+- **`.coppia>*{min-width:0}` non è decorativo**: senza, nella griglia il minimo
+  di una colonna è il suo contenuto, le due carte si allargano e la pagina
+  scorre di lato. Trovato provando a 390 e 320 px.
+
 ## La palestra dentro il Diario
 
 Chiesta il 2026-08-28, subito dopo i passi: "assieme ai passi devi mettere anche la
