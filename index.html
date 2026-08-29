@@ -1027,10 +1027,21 @@ function vistaOggi(){
   /* Se un giorno della striscia è aperto, tutta la parte alta parla di quel
      giorno: anelli, cifre, grasso e macro. Prima i numeri grandi restavano
      sempre di oggi mentre sotto si leggeva un altro giorno. */
-  var aperto=(S.aperto&&s7.some(function(g){return g.iso===S.aperto;}))?S.aperto:null;
-  var passato=!!(aperto&&aperto!==S.data);
+  /* **Oggi non si apre**: la parte alta parla già di oggi, e la scheda "Cosa
+     hai mangiato" ripeterebbe l'elenco che sta qui sotto. Quando lo faceva,
+     toccare il cerchio di oggi infilava un pannello da quasi 400 px in mezzo
+     alla pagina e spingeva Camminata e Palestra fuori dallo schermo: due
+     tocchi, e le due carte c'erano o non c'erano. Toccando oggi si torna a
+     oggi, e basta. */
+  var aperto=(S.aperto&&S.aperto!==S.data&&s7.some(function(g){return g.iso===S.aperto;}))?S.aperto:null;
+  var passato=!!aperto;
   var voci=passato?S.apertoVoci:S.voci;
   var t=totali(voci), h="";
+  /* dichiarati qui perché servono anche alla scheda del giorno aperto, che sta
+     più in alto: prima quella riga leggeva `pa` prima che avesse un valore e
+     mostrava sempre zero passi */
+  var pa=passato?S.apertoPassi:S.passi;
+  var gg=aperto||S.data, pal=palestraDi(gg);
   var rest=S.ob.kcal-t.kcal, oltreOb=t.kcal>S.ob.kcal;
   var deficit=S.ob.fab-t.kcal;
 
@@ -1085,20 +1096,10 @@ function vistaOggi(){
       :"Media "+num(tot7/np)+" kcal e "+num(totP/np)+" g di proteine al giorno.")+
      '</div></section>';
 
-  if(aperto){
-    // per un giorno passato l'intestazione sta già sul quadrante qui sopra
-    h+='<section class="pannello"><div class="p-testa">'+
-       '<span class="etichetta">Cosa hai mangiato</span>'+
-       (passato?"":'<button class="sc-chiudi" data-az="apri" data-d="'+aperto+'">chiudi</button>')+
-       '</div>'+dettaglioGiorno(voci,false,pa,aperto||S.data)+'</section>';
-  }
-
   h+='<section class="coppia">'+mini("Carboidrati",t.c,S.ob.c)+mini("Grassi",t.g,S.ob.g)+'</section>';
 
   /* Camminata e palestra stanno affiancate e **non toccano i numeri di sopra**:
      sono cose che hai fatto, non un permesso di mangiare di più. Deciso con lui. */
-  var pa=passato?S.apertoPassi:S.passi;
-  var gg=aperto||S.data, pal=palestraDi(gg);
   /* Sul giorno di oggi il numero dei passi **è** la casella dove si scrivono:
      ripeterlo sopra e sotto sarebbe lo stesso numero due volte in un riquadro
      largo mezzo schermo. La riga sotto lo dice che si può toccare. */
@@ -1114,6 +1115,19 @@ function vistaOggi(){
        pal?'<div class="br-coda">'+(pal.tot?"su "+pal.tot+" \u00b7 ":"")+rigaPalestra(pal,true)+'</div>':'')+
      '</section>'+
      '<div class="nota nota-coppia"><strong>I passi si scrivono toccando il numero</strong>, oppure te li manda l\u2019app dei passi; la palestra arriva da sola dall\u2019app Palestra. Le calorie sono stime: non entrano nel deficit e non cambiano i grammi di grasso.</div>';
+
+  /* La scheda del giorno passato sta **qui sotto**, nello stesso posto dove su
+     oggi c'è l'elenco di quello che hai mangiato: è la stessa roba, e messa
+     qui non sposta niente di quello che sta sopra. Quando stava subito sotto
+     la striscia, cambiare giorno spingeva Camminata e Palestra fuori dallo
+     schermo e sembravano sparite. */
+  if(aperto){
+    // per un giorno passato l'intestazione sta già sul quadrante qui sopra
+    h+='<section class="pannello"><div class="p-testa">'+
+       '<span class="etichetta">Cosa hai mangiato</span>'+
+       '</div>'+dettaglioGiorno(voci,false,pa,aperto)+'</section>';
+  }
+
 
   // un giorno passato non si modifica: niente pulsante e niente elenco con "togli"
   if(passato) return h;
@@ -1526,7 +1540,9 @@ document.getElementById("app").addEventListener("click",function(ev){
     var d=b.getAttribute("data-d"), dove=b.getAttribute("data-dove")||"lista";
     /* Lo stesso giorno compare nel calendario e nell'elenco sotto: senza
        sapere da dove è stato toccato, la scheda si aprirebbe in due posti. */
-    var chiude=(S.aperto===d&&S.apertoDove===dove);
+    /* Nella striscia dei 7 giorni oggi non apre niente: chiude e riporta a
+       oggi. Nel calendario dello storico invece si apre come tutti. */
+    var chiude=(S.aperto===d&&S.apertoDove===dove)||(dove==="lista"&&d===S.data&&S.vista==="oggi");
     /* Chiudere il giorno vuol dire tornare a oggi: la striscia, se era
        arretrata, torna a finire su oggi insieme al resto. */
     if(chiude){S.aperto=null;S.finestra=null;}

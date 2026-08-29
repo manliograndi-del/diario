@@ -173,9 +173,17 @@ Non ribaltarle senza dirglielo esplicitamente.
   giorno passato spariscono il pulsante “Aggiungi” e l'elenco con i “togli”,
   perché non si modifica. Prima i numeri grandi restavano di oggi mentre sotto si
   leggeva un altro giorno, e non si capiva a cosa si riferissero.
-- **Nella striscia dei 7 giorni si tocca un giorno** e si apre sotto la scheda
+- **Nella striscia dei 7 giorni si tocca un giorno** e si apre la scheda
   completa: totali, confronto con l'obiettivo, voci raggruppate per pasto con l'ora,
   in ordine di orario.
+  **La scheda sta in fondo**, nello stesso posto dove su oggi c'è l'elenco di
+  quello che hai mangiato — non subito sotto la striscia. Ed **oggi non si
+  apre**: toccare il suo cerchio riporta a oggi e basta. Le due cose insieme
+  risolvono un guaio segnalato il 2026-08-28: quella scheda infilata in mezzo
+  spingeva Camminata e Palestra 396 px più in giù e le mandava fuori schermo, e
+  siccome su oggi ripeteva l'elenco che stava già lì sotto, due tocchi sul
+  cerchio di oggi facevano comparire e sparire le due carte senza motivo
+  visibile. Se rimetti quella scheda più in alto, il guaio torna.
   **Tutti e sette i cerchi rispondono**, oggi compreso e anche i giorni senza voci
   (che dicono di essere vuoti). Le prime versioni lasciavano inerti oggi e i giorni
   vuoti perché non avevano niente da aggiungere: Manlio ha toccato cinque cerchi
