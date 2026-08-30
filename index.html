@@ -138,13 +138,14 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 .brucia .br-riga{display:flex;align-items:center;gap:10px;margin-top:9px}
 .br-svg{width:46px;height:46px;flex:none}
 .br-txt{min-width:0}
-.br-n{font-size:19px;font-weight:700;line-height:1.05;letter-spacing:-.02em;white-space:nowrap}
-.br-n .unita{font-size:10.5px;font-weight:500;color:var(--tenue);letter-spacing:0}
-.br-vuoto{font-size:12px;color:var(--tenue);line-height:1.25}
-.brucia .g-kcal{display:block;margin-top:4px}
-.br-in{width:4.4ch;padding:0 0 2px;border:0;border-bottom:1.5px solid var(--linea);border-radius:0;
-  background:transparent;color:var(--inchiostro);font-family:inherit;font-size:19px;font-weight:700;
-  letter-spacing:-.02em;-webkit-appearance:none;appearance:none}
+.br-n{font-size:22px;font-weight:700;line-height:1.05;letter-spacing:-.02em;white-space:nowrap;color:var(--verde)}
+.br-n.spenta{color:var(--tenue)}
+.br-n .unita{font-size:11px;font-weight:500;color:var(--tenue);letter-spacing:0}
+.br-sotto{font-size:11.5px;color:var(--tenue);margin-top:4px;line-height:1.3}
+.br-u{font-size:11.5px;color:var(--tenue)}
+.br-in{width:4.6ch;padding:0 0 1px;border:0;border-bottom:1.5px solid var(--linea);border-radius:0;
+  background:transparent;color:var(--inchiostro);font-family:inherit;font-size:12.5px;font-weight:700;
+  -webkit-appearance:none;appearance:none}
 .br-in:focus{outline:none;border-bottom-color:var(--blu)}
 .br-coda{font-size:11px;color:var(--tenue);margin-top:9px;line-height:1.3}
 .nota-coppia{margin-top:10px}
@@ -569,15 +570,20 @@ function discoBruciate(kcal){
   if(r>0.8) v+='<circle cx="'+c+'" cy="'+c+'" r="'+r.toFixed(1)+'" style="fill:var(--verde)"/>';
   return v+'</svg>';
 }
-function cartaBruciate(et,kcal,numero,coda){
+/* **Le calorie sono il numero grande, il resto sta sotto** (chiesto il
+   2026-08-29). Prima erano al contrario: 8200 in grande e le calorie in
+   piccolo. Ma i passi e le serie sono il come, le calorie sono il quanto — ed
+   è l'unica delle due misure che si confronta fra camminata e palestra, che è
+   poi il motivo per cui le due carte stanno affiancate. */
+function cartaBruciate(et,kcal,sotto,coda){
   return '<div class="pannello mini brucia"><div class="etichetta">'+et+'</div>'+
     '<div class="br-riga">'+discoBruciate(kcal)+
-      '<div class="br-txt">'+numero+
-      (kcal>0?'<div class="g-kcal">\u2248 '+num(kcal)+' kcal</div>':'')+
+      '<div class="br-txt">'+
+      '<div class="br-n'+(kcal>0?'':' spenta')+'">'+(kcal>0?'<span class="unita">\u2248 </span>':'')+
+        num(kcal)+'<span class="unita"> kcal</span></div>'+
+      '<div class="br-sotto">'+sotto+'</div>'+
       '</div></div>'+(coda||'')+'</div>';
 }
-function brNum(n,unita){ return '<div class="br-n">'+num(n)+'<span class="unita"> '+unita+'</span></div>'; }
-function brVuoto(t){ return '<div class="br-vuoto">'+t+'</div>'; }
 
 /* Una riga sola che racconta la seduta, usata in più posti. */
 function rigaPalestra(v,senzaSerie){
@@ -1101,18 +1107,17 @@ function vistaOggi(){
   /* Camminata e palestra stanno affiancate e **non toccano i numeri di sopra**:
      sono cose che hai fatto, non un permesso di mangiare di più. Deciso con lui. */
   /* Sul giorno di oggi il numero dei passi **è** la casella dove si scrivono:
-     ripeterlo sopra e sotto sarebbe lo stesso numero due volte in un riquadro
-     largo mezzo schermo. La riga sotto lo dice che si può toccare. */
+     ripeterlo sarebbe lo stesso numero due volte in un riquadro largo mezzo
+     schermo. La sottolineatura dice che si tocca. */
   var camm=passato
-    ? (pa>0?brNum(pa,"passi"):brVuoto("nessun passo segnato"))
-    : '<div class="br-n"><input class="br-in" data-in="passi" type="number" inputmode="numeric" value="'+
-      (S.passi||"")+'" placeholder="0"><span class="unita"> passi</span></div>';
+    ? (pa>0?num(pa)+" passi":"nessun passo segnato")
+    : '<input class="br-in" data-in="passi" type="number" inputmode="numeric" value="'+
+      (S.passi||"")+'" placeholder="0"><span class="br-u"> passi</span>';
   h+='<section class="coppia">'+
      cartaBruciate("Camminata",kcalPassi(pa),camm)+
      cartaBruciate("Palestra",pal?kcalPalestra(pal):0,
-       pal?brNum(pal.serie,"serie")
-          :brVuoto("nessun allenamento"),
-       pal?'<div class="br-coda">'+(pal.tot?"su "+pal.tot+" \u00b7 ":"")+rigaPalestra(pal,true)+'</div>':'')+
+       pal?pal.serie+(pal.tot?" serie su "+pal.tot:" serie"):"nessun allenamento",
+       pal?'<div class="br-coda">'+rigaPalestra(pal,true)+'</div>':'')+
      '</section>'+
      '<div class="nota nota-coppia"><strong>I passi si scrivono toccando il numero</strong>, oppure te li manda l\u2019app dei passi; la palestra arriva da sola dall\u2019app Palestra. Le calorie sono stime: non entrano nel deficit e non cambiano i grammi di grasso.</div>';
 

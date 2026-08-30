@@ -375,7 +375,13 @@ lui: due pannelli larghi tutto lo schermo per due numeri erano mezza schermata
 buttata.
 
 Dentro ogni carta: un **cerchio pieno grande quanto le calorie bruciate**, e di
-fianco il numero (passi o serie) con le calorie sotto.
+fianco **le calorie in grande**, col numero di passi o di serie in piccolo sotto.
+
+Le calorie stanno sopra dal 2026-08-29, su sua richiesta: prima erano al
+contrario. I passi e le serie sono il *come*, le calorie sono il *quanto* — e
+sono l'unica delle due misure che si confronta fra camminata e palestra, che è
+poi il motivo per cui le due carte stanno affiancate. Il segno ≈ davanti resta:
+un numero grande e nudo sembrerebbe un dato misurato invece di una stima.
 
 - **I due cerchi hanno la stessa scala** — `RIF_BRUCIATE`, 600 kcal riempiono il
   cerchio — se no confrontarli a occhio non vorrebbe dire niente. È il punto di

@@ -5,7 +5,7 @@
    github.io vive anche l'app Palestra e le due si cancellerebbero
    la cache a vicenda. Alza il numero di versione a ogni rilascio. */
 const PREFISSO = "diario-";
-const CACHE = PREFISSO + "v29";
+const CACHE = PREFISSO + "v30";
 /* I cerchi della barra in alto: uno ogni 5%, più quello di quando si sfora.
    Vanno in cache come gli altri file, altrimenti in aereo la notifica
    resterebbe senza disegno. */
