@@ -474,6 +474,16 @@ function cerchioFile(q){
   return "badge/cerchio-"+p3(Math.round(q*20)*5)+".png";
 }
 function cerchioSiPuo(){ return ("Notification" in window) && !!navigator.serviceWorker; }
+/* I colori del disegno li manda la pagina, letti dalle variabili CSS vere che
+   sta usando adesso: così il service worker non ne tiene una copia sua che si
+   scollerebbe alla prima modifica, e il tema chiaro o scuro viene dietro da
+   solo senza doverlo dire. */
+function tintePerIlDisegno(){
+  var st=getComputedStyle(document.documentElement);
+  return ["--carta","--inchiostro","--tenue","--traccia","--blu","--senape","--rosso"]
+    .map(function(n){ return (st.getPropertyValue(n)||"").trim().replace("#",""); })
+    .join(",");
+}
 function aggiornaCerchio(){
   if(!S.cerchio||!cerchioSiPuo()||Notification.permission!=="granted") return;
   var t=totali(S.voci), ob=Math.max(1,S.ob.kcal), q=t.kcal/ob, rest=S.ob.kcal-t.kcal;
@@ -482,7 +492,7 @@ function aggiornaCerchio(){
      indirizzo identico verrebbe ripreso dalla memoria del browser e la
      notifica mostrerebbe il disegno di prima. */
   var img="anelli.png?k="+Math.round(t.kcal)+"&ok="+S.ob.kcal+
-          "&p="+Math.round(t.p)+"&op="+S.ob.p+"&t="+(temaScuro()?"scuro":"chiaro")+
+          "&p="+Math.round(t.p)+"&op="+S.ob.p+"&c="+tintePerIlDisegno()+
           "&v="+Date.now();
   navigator.serviceWorker.ready.then(function(reg){
     return reg.showNotification(num(t.kcal)+" di "+S.ob.kcal+" kcal",{

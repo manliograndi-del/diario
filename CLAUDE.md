@@ -497,11 +497,14 @@ l'immagine grande della notifica, disegnata **dentro il service worker** con
 - Non potevano essere file già pronti come i cerchi della barra: le
   combinazioni di calorie e proteine sono troppe. E non poteva disegnarli la
   pagina: l'immagine se la va a prendere il browser da un indirizzo.
-- **La tavolozza in `sw.js` è una copia di quella di `index.html`**, perché lì
-  dentro le variabili CSS non esistono. Se cambi i colori di là, cambiali anche
-  qui, o gli anelli della notifica smetteranno di somigliare a quelli dell'app.
-  Il disegno segue anche il tema chiaro/scuro dell'ora, che gli arriva
-  nell'indirizzo.
+- **I colori non stanno scritti nel service worker**: glieli manda la pagina
+  nell'indirizzo (`&c=…`), letti con `getComputedStyle` dalle stesse variabili
+  CSS che sta usando in quel momento. Fino al 2026-08-29 erano ricopiati lì
+  dentro, ed era una trappola: cambiare la tavolozza in `index.html` non
+  bastava e il disegno della notifica restava dei colori vecchi senza che
+  nessuno se ne accorgesse. Così arriva già giusto anche il tema chiaro o
+  scuro, e non serve più dirglielo. In `sw.js` resta solo un `RIPIEGO`, per non
+  restare senza disegno se l'indirizzo arriva monco.
 - Nell'indirizzo c'è anche `&v=<ora>`: senza, il browser riuserebbe l'immagine
   di prima e la notifica mostrerebbe numeri vecchi.
 

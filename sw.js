@@ -5,7 +5,7 @@
    github.io vive anche l'app Palestra e le due si cancellerebbero
    la cache a vicenda. Alza il numero di versione a ogni rilascio. */
 const PREFISSO = "diario-";
-const CACHE = PREFISSO + "v30";
+const CACHE = PREFISSO + "v31";
 /* I cerchi della barra in alto: uno ogni 5%, più quello di quando si sfora.
    Vanno in cache come gli altri file, altrimenti in aereo la notifica
    resterebbe senza disegno. */
@@ -50,12 +50,22 @@ function conserva(richiesta, risposta) {
    La tavolozza è copiata da quella di `index.html`: qui dentro le variabili
    CSS non esistono. **Se cambi i colori di là, cambiali anche qui**, o gli
    anelli della notifica smetteranno di somigliare a quelli dell'app. */
-const TAVOLOZZA = {
-  chiaro: { carta:"#E9ECE6", inchiostro:"#141B18", tenue:"#5B6661",
-            traccia:"#E4E8E1", blu:"#1F4A6B", senape:"#C08411", rosso:"#A3341F" },
-  scuro:  { carta:"#121614", inchiostro:"#E6EBE7", tenue:"#96A29C",
-            traccia:"#2A322F", blu:"#6FA8CE", senape:"#D9A441", rosso:"#D9694B" }
-};
+/* I colori **non stanno scritti qui**: li manda la pagina nell'indirizzo, presi
+   dalle stesse variabili CSS che sta usando in quel momento. Prima erano
+   ricopiati qui dentro, ed era una trappola: cambiare la tavolozza in
+   index.html non bastava, e il disegno della notifica restava dei colori
+   vecchi senza che nessuno se ne accorgesse. Così arriva già giusto anche il
+   tema chiaro o scuro, senza doverlo chiedere.
+   Quelli qui sotto servono solo a non restare senza disegno se l'indirizzo
+   arriva monco. */
+const RIPIEGO = { carta:"#E9ECE6", inchiostro:"#141B18", tenue:"#5B6661",
+                  traccia:"#E4E8E1", blu:"#1F4A6B", senape:"#C08411", rosso:"#A3341F" };
+function tavolozza(u) {
+  const c = Object.assign({}, RIPIEGO), v = (u.searchParams.get("c") || "").split(",");
+  const nomi = ["carta", "inchiostro", "tenue", "traccia", "blu", "senape", "rosso"];
+  nomi.forEach((n, i) => { if (/^[0-9a-fA-F]{6}$/.test(v[i] || "")) c[n] = "#" + v[i]; });
+  return c;
+}
 
 function arco(x, cx, cy, r, spesso, colore, quota) {
   if (quota <= 0) return;
@@ -70,7 +80,7 @@ async function disegnaAnelli(u) {
   const kcal = Math.max(0, Number(u.searchParams.get("k")) || 0);
   const obK = n("ok", 1500);
   const prot = Math.max(0, Number(u.searchParams.get("p")) || 0), obP = n("op", 160);
-  const C = TAVOLOZZA[u.searchParams.get("t") === "scuro" ? "scuro" : "chiaro"];
+  const C = tavolozza(u);
 
   const W = 1024, H = 512, c = new OffscreenCanvas(W, H), x = c.getContext("2d");
   x.fillStyle = C.carta; x.fillRect(0, 0, W, H);
