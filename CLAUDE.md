@@ -239,9 +239,20 @@ Non ribaltarle senza dirglielo esplicitamente.
   **La griglia ha otto colonne, non sette**: l'ottava è il totale della
   settimana, e per sommarlo il calendario si costruisce per righe intere — le
   caselle prima del primo giorno e dopo l'ultimo si riempiono di vuoto, se no
-  l'ottava colonna si sfalsa. L'ultima riga è il totale del mese, che chiude la
-  colonna; è lo stesso numero del blocco "Grasso perso nel mese" qui sotto, che
-  resta perché lì c'è anche la spiegazione.
+  l'ottava colonna si sfalsa.
+  **Il totale del mese dentro il calendario non c'è**, provato e tolto lo stesso
+  giorno: sta già scritto grande nel riquadro subito sotto, e vederlo due volte
+  a due centimetri di distanza non serviva a nessuno.
+  **Una settimana a cavallo di due mesi conta solo i giorni del mese che stai
+  guardando** — è una domanda che ha fatto lui, e la risposta è una scelta, non
+  una svista. Così la colonna dei totali somma esattamente al totale del mese;
+  contando la settimana intera, quella a cavallo verrebbe contata due volte, una
+  per mese, e i conti non tornerebbero più da nessuna delle due parti. Le due
+  metà stanno una in fondo a un mese e una in cima all'altro, e sommate fanno la
+  settimana vera: provato sulla settimana del 27 luglio–2 agosto, 199 + 258 =
+  457 contro i 458 della settimana intera (un grammo di arrotondamento, perché
+  ogni giorno si arrotonda per conto suo). La didascalia sotto al calendario lo
+  dice, se no la prima e l'ultima riga sembrerebbero settimane fiacche.
   Il verde e il rosso valgono **anche sul totale del mese**: è la stessa lingua
   in tutto il calendario, e un fondo scuro con la scritta bianca gliela toglieva.
   Su un giorno toccato o aperto il fondo diventa inchiostro, quindi lì numero e

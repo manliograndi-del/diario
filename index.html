@@ -188,12 +188,6 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 /* la colonna dei totali di settimana, in fondo a ogni riga */
 .cal-w{min-height:44px;border-radius:3px;background:var(--traccia);display:flex;align-items:center;justify-content:center}
 .cal-w em{font-size:10px}
-/* L'ultima riga chiude la colonna: il totale del mese, scritto in negativo
-   perché è la riga che riassume tutte le altre. */
-.cal-mese{grid-column:1/8;display:flex;align-items:center;justify-content:flex-end;padding-right:9px;
-  font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:var(--tenue)}
-.cal-w.mese{background:var(--traccia);border:1.5px solid var(--inchiostro);min-height:34px}
-.cal-w.mese em{font-size:12px}
 .mese-num{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--linea)}
 .mese-num .cifra-m{margin:5px 0 0}
 .mese-grasso{margin-top:16px;padding:14px;background:var(--carta);border:1px solid var(--linea);border-radius:3px}
@@ -1382,12 +1376,11 @@ function pannelloMese(){
     });
     h+='<div class="cal-w">'+(quanti?grammiScritti(somma):'')+'</div>';
   });
-  if(t.n>0) h+='<div class="cal-mese">MESE</div><div class="cal-w mese">'+grammiScritti(t.persi-t.presi)+'</div>';
   h+='</div>';
 
   h+='<div class="p-piede">I grammi di grasso di ogni giorno: <span class="gi">in verde</span> quelli persi, '+
      '<span class="gu">in rosso</span> quelli ripresi. In fondo a ogni riga il totale della settimana, '+
-     'e qui sotto quello del mese. Tocca un giorno per aprirne la scheda.</div>';
+     '\u2014 la prima e l\u2019ultima contano solo i giorni di questo mese. Tocca un giorno per aprirne la scheda.</div>';
   /* La scheda va qui, attaccata al calendario: in fondo al pannello resterebbe
      sotto lo schermo e il tocco sembrerebbe non aver fatto niente. */
   if(S.aperto&&S.apertoDove==="cal"&&S.aperto.slice(0,7)===m){
