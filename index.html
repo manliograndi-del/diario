@@ -1561,11 +1561,7 @@ document.getElementById("app").addEventListener("click",function(ev){
     /* Chiudere il giorno vuol dire tornare a oggi: la striscia, se era
        arretrata, torna a finire su oggi insieme al resto. */
     if(chiude){S.aperto=null;S.finestra=null;}
-    else {
-      S.aperto=d; S.apertoDove=dove;
-      var gg=leggi(K_G+d,{voci:[]});
-      S.apertoVoci=gg.voci||[]; S.apertoPassi=Number(gg.passi)||0;
-    }
+    else apriGiorno(d,dove);
     render();
   }
   else if(az==="mese"){ S.mese=meseSposta(S.mese||meseDiOggi(),Number(v)); S.aperto=null; render(); }
@@ -1584,12 +1580,35 @@ document.getElementById("app").addEventListener("click",function(ev){
   else if(az==="importa"){ ripristina(); }
 });
 
-/* Scorrendo il dito sul quadrante si cambia giorno: a sinistra il giorno dopo,
-   a destra quello prima. Oltre oggi non si va — un domani da leggere non c'è — e
+/* Scorrendo il dito si cambia giorno: a sinistra il giorno dopo, a destra
+   quello prima. Oltre oggi non si va — un domani da leggere non c'è — e
    indietro si arriva fino al primo giorno registrato, con la striscia che segue.
-   Sono eventi "pointer" e non "touch" apposta: funzionano anche col mouse, e il
-   browser manda pointercancel appena decide che quel dito sta scorrendo la
-   pagina, così un movimento verticale non fa mai cambiare giorno per sbaglio. */
+
+   **Riscritto il 2026-08-29 perché era inaffidabile**: lo stesso gesto, nello
+   stesso punto, a volte cambiava giorno e a volte no. Due le ragioni, e valgono
+   per qualunque gesto dentro una pagina che scorre:
+
+   1. prima erano eventi "pointer" e il giorno cambiava **quando alzavi il
+      dito**. Ma appena il browser decide che quel dito sta scorrendo la pagina
+      manda `pointercancel`, il gesto sparisce e nessun `pointerup` arriva mai:
+      bastava una punta di verticale in partenza. Adesso il gesto si riconosce
+      **mentre il dito si muove**, a 60 px di corsa — quando il browser
+      potrebbe ripensarci, il giorno è già cambiato. E appena il movimento è
+      chiaramente orizzontale chiamiamo `preventDefault`, che è il modo di dire
+      "questo dito è mio" prima che se lo prenda lui;
+   2. si poteva scorrere **solo sul quadrante**, un terzo di schermo, e lui lo
+      faceva anche più in basso credendo che fosse rotto. Adesso vale su tutta
+      la schermata di oggi.
+
+   Due zone restano fuori apposta: **i bordi**, 26 px per parte, da dove parte
+   il gesto "indietro" di Android — rubarglielo farebbe litigare l'app col
+   telefono; e tutto ciò che si tocca (caselle, pulsanti), dove il dito sta
+   facendo altro. Vale con un dito solo: due dita sono una pizzicata per
+   ingrandire, non uno scorrimento.
+
+   Col mouse non funziona più, ed è voluto: sul computer i sette cerchietti si
+   toccano, e tenere in piedi due strade per lo stesso gesto era una delle
+   ragioni per cui questa non funzionava bene. */
 /* Il rimbalzo non ridisegna niente — non è cambiato niente da disegnare —
    quindi lavora direttamente sulla pagina già in piedi. Il classList.remove più
    il offsetWidth servono a farlo ripartire anche se il dito insiste: senza,
@@ -1602,6 +1621,15 @@ function rimbalzo(n){
   e.classList.add(cl);
   e.addEventListener("animationend",function(){ e.classList.remove(cl); },{once:true});
 }
+/* Aprire un giorno vuol dire caricarne **tutto** quello che serve. Sta scritto
+   qui una volta sola perché prima era in due posti: il tocco su un cerchio
+   caricava voci e passi, lo scorrimento del dito solo le voci — e scorrendo, i
+   passi restavano quelli del giorno di prima finché non toccavi un cerchio. */
+function apriGiorno(iso,dove){
+  var g=leggi(K_G+iso,{voci:[]});
+  S.aperto=iso; S.apertoDove=dove||"lista";
+  S.apertoVoci=g.voci||[]; S.apertoPassi=Number(g.passi)||0;
+}
 function giornoScorri(n){
   var oggi=oggiISO(), iso=isoSposta(S.aperto||oggi,n);
   if(iso>oggi||iso<primoGiorno()){ rimbalzo(n); return; }
@@ -1610,26 +1638,39 @@ function giornoScorri(n){
   if(iso>fine) fine=iso;
   else if(iso<isoSposta(fine,-6)) fine=isoSposta(iso,6);
   S.finestra=(fine>=oggi)?null:fine;
-  if(iso===oggi){ S.aperto=null; }
-  else { S.aperto=iso; S.apertoDove="lista"; S.apertoVoci=(leggi(K_G+iso,{voci:[]}).voci)||[]; }
+  if(iso===oggi) S.aperto=null; else apriGiorno(iso);
+  /* la palestra si rilegge qui: se ti sei allenato mentre il Diario era già
+     aperto, arrivando su quel giorno il riquadro sarebbe rimasto vuoto */
+  leggiPalestra();
   render();
 }
-var tocco=null;
-document.getElementById("app").addEventListener("pointerdown",function(ev){
-  tocco=null;
-  if(S.vista!=="oggi"||!ev.target.closest) return;
-  if(!ev.target.closest(".quadrante")) return;
-  tocco={x:ev.clientX,y:ev.clientY,id:ev.pointerId};
-});
-document.getElementById("app").addEventListener("pointercancel",function(){ tocco=null; });
-document.getElementById("app").addEventListener("pointerup",function(ev){
-  if(!tocco||ev.pointerId!==tocco.id) return;
-  var dx=ev.clientX-tocco.x, dy=ev.clientY-tocco.y;
-  tocco=null;
-  /* 50 px di corsa e poca deriva in verticale: un tocco fermo o storto non conta */
-  if(Math.abs(dx)<50||Math.abs(dy)>40) return;
-  giornoScorri(dx<0?1:-1);
-});
+
+var CORSA=60, BORDO=26;
+var gesto=null;
+function suUnComando(t){
+  return !!(t&&t.closest&&t.closest("input,textarea,select,button,label,a"));
+}
+document.getElementById("app").addEventListener("touchstart",function(ev){
+  gesto=null;
+  if(S.vista!=="oggi"||ev.touches.length!==1) return;
+  var t=ev.touches[0];
+  if(t.clientX<BORDO||t.clientX>window.innerWidth-BORDO) return;
+  if(suUnComando(ev.target)) return;
+  gesto={x:t.clientX,y:t.clientY,dir:0,fatto:false};
+},{passive:true});
+document.getElementById("app").addEventListener("touchmove",function(ev){
+  if(!gesto||gesto.fatto||ev.touches.length!==1) return;
+  var t=ev.touches[0], dx=t.clientX-gesto.x, dy=t.clientY-gesto.y;
+  if(!gesto.dir){
+    /* verticale: è la pagina che scorre, e allora questo gesto non è nostro */
+    if(Math.abs(dy)>10&&Math.abs(dy)>=Math.abs(dx)){ gesto=null; return; }
+    if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)) gesto.dir=1; else return;
+  }
+  if(ev.cancelable) ev.preventDefault();
+  if(Math.abs(dx)>=CORSA){ gesto.fatto=true; giornoScorri(dx<0?1:-1); }
+},{passive:false});
+document.getElementById("app").addEventListener("touchend",function(){ gesto=null; },{passive:true});
+document.getElementById("app").addEventListener("touchcancel",function(){ gesto=null; },{passive:true});
 
 /* Ripristino da file: incollare il testo di un backup è scomodo su un
    computer, e serve proprio quando si vuole rivedere il diario altrove. */

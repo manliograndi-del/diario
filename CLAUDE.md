@@ -237,24 +237,38 @@ Non ribaltarle senza dirglielo esplicitamente.
   **I grammi di ogni mese passato sono ricalcolati con il fabbisogno di adesso**, di
   proposito: serve a confrontare i mesi con lo stesso metro. Se cambia il
   fabbisogno, cambia tutto lo storico.
-- **Sul quadrante si cambia giorno scorrendo il dito** (chiesto il 2026-08-22):
-  a destra il giorno prima, a sinistra quello dopo. Oltre oggi non si va, e indietro
-  si arriva **fino al primo giorno registrato** (i sette giorni della striscia si
-  aprono sempre, anche su un diario appena cominciato): `primoGiorno()`. La striscia
-  arretra insieme al giorno, così dove sei è sempre segnato sotto.
-  Il gesto vale **solo sul quadrante**, non su tutta la pagina: più in basso ci sono
-  elenchi e pulsanti, e un dito storto lì avrebbe cambiato giorno per sbaglio.
-  Sono eventi `pointer`, non `touch`: valgono anche col mouse, e il browser manda
-  `pointercancel` appena capisce che quel dito sta scorrendo la pagina, quindi un
-  movimento verticale non cambia mai giorno. Serve `touch-action:pan-y` sul
-  `.quadrante`, altrimenti lo scorrimento verticale se lo prende tutto il browser
-  e quello orizzontale non arriva mai. Soglie: 50 px di corsa, meno di 40 px di
-  deriva verticale.
-  **Serve anche `user-select:none` sul `.quadrante`**: senza, un dito che parte sopra
-  un numero fa partire il trascinamento del testo, il browser manda `pointercancel` e
-  il giorno non cambia. Capitava solo su certi giorni — dove al centro del quadrante
-  cadeva una scritta invece del disegno — cioè il difetto peggiore, quello che sembra
-  un capriccio dell'app.
+- **Si cambia giorno scorrendo il dito** (chiesto il 2026-08-22): a destra il
+  giorno prima, a sinistra quello dopo. Oltre oggi non si va, e indietro si
+  arriva **fino al primo giorno registrato** (`primoGiorno()`; i sette cerchi
+  della striscia si aprono sempre, anche su un diario appena cominciato). La
+  striscia arretra insieme al giorno, così dove sei è sempre segnato sotto.
+  **Rifatto da capo il 2026-08-29 perché era inaffidabile** — stesso gesto,
+  stesso punto, a volte sì e a volte no. Le due ragioni, che valgono per
+  qualunque gesto dentro una pagina che scorre:
+  1. il giorno cambiava **al `pointerup`**, ma appena il browser decide che quel
+     dito sta scorrendo la pagina manda `pointercancel` e il `pointerup` non
+     arriva mai: bastava una punta di verticale in partenza. Adesso si riconosce
+     **durante il `touchmove`**, a 60 px di corsa, e appena il movimento è
+     chiaramente orizzontale si chiama `preventDefault()` — che è il modo di
+     prendersi il dito prima che se lo prenda il browser (serve
+     `{passive:false}`, se no `preventDefault` non fa niente).
+  2. valeva **solo sul quadrante**, un terzo di schermo, e lui scorreva più in
+     basso credendo che fosse rotto. Adesso vale su tutta la schermata di oggi.
+  Restano fuori **i 26 px di bordo** (da lì parte il gesto "indietro" di
+  Android: rubarglielo fa litigare l'app col telefono) e tutto ciò che si tocca
+  — `input, textarea, select, button, label, a`. Un dito solo: due sono una
+  pizzicata per ingrandire. Se il movimento parte verticale (oltre 10 px e più
+  della componente orizzontale) il gesto viene abbandonato per intero, così la
+  pagina scorre in pace.
+  **Col mouse non funziona più**, ed è voluto: sul computer si toccano i
+  cerchietti, e tenere in piedi due strade per lo stesso gesto era una delle
+  ragioni per cui questa non funzionava bene.
+- **`apriGiorno()` è l'unico posto che apre un giorno.** Prima aprire era
+  scritto due volte: il tocco su un cerchio caricava voci **e** passi, lo
+  scorrimento del dito solo le voci. Risultato, segnalato da lui: scorrendo, i
+  passi restavano quelli del giorno precedente finché non toccavi un cerchio,
+  che "rimetteva tutto a posto". Se aggiungi un dato per giorno, aggiungilo lì
+  dentro e basta.
 - **Niente istruzioni scritte sotto i cerchi** (chiesto il 2026-08-22). Sono stati
   tolti l'invito "Tocca un giorno... oppure scorri con il dito" sotto la striscia e
   tutto il paragrafo che spiegava il cerchio del grasso e le 7700 kcal. Sotto la
