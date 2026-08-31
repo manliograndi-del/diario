@@ -169,28 +169,35 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 .frec{width:46px;height:40px;border:1px solid var(--linea);border-radius:3px;background:var(--superficie);color:var(--inchiostro);font-size:17px;font-weight:700}
 .frec:active{background:var(--inchiostro);color:var(--su-inchiostro)}
 .frec:disabled{opacity:.28}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:14px}
-.cal-l{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--tenue);text-align:center;padding-bottom:3px}
-.cal-g{min-height:42px;border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12.5px;font-variant-numeric:tabular-nums;padding:0}
-.cal-g.spenta{background:var(--traccia);border:1px solid var(--linea);color:var(--tenue)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr) 1.2fr;gap:3px;margin-top:14px}
+.cal-l{font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:var(--tenue);text-align:center;padding-bottom:3px}
+.cal-g{min-height:44px;border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0}
+.cal-g b{font-family:var(--mono);font-size:9px;font-weight:400;line-height:1;color:var(--tenue)}
+/* i grammi: sono loro il messaggio, il numero del giorno è solo l'etichetta */
+.cal-g em,.cal-w em{font-style:normal;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.cal-g em{font-size:11px}
+.gi{color:var(--verde)}
+.gu{color:var(--rosso)}
+.cal-g.spenta{background:var(--traccia);border:1px solid var(--linea)}
 .cal-g.vuota{background:none}
-.cal-g.dato{background:var(--superficie);border:1px solid var(--inchiostro);color:var(--inchiostro);font-weight:700}
-.cal-g.dato:active{background:var(--inchiostro);color:var(--su-inchiostro)}
-.cal-g.dato.on{background:var(--inchiostro);color:var(--su-inchiostro);border-color:var(--inchiostro)}
-.cal-g i{display:block;width:15px;height:3px;border-radius:2px;background:var(--neutro)}
-.cal-g.sotto i{background:var(--verde)}
-.cal-g.medio i{background:var(--blu)}
-.cal-g.oltre i{background:var(--rosso)}
+.cal-g.dato{background:var(--superficie);border:1px solid var(--inchiostro)}
+.cal-g.dato:active,.cal-g.dato.on{background:var(--inchiostro);border-color:var(--inchiostro)}
+/* sul fondo scuro il verde e il rosso non si leggerebbero più */
+.cal-g.dato:active b,.cal-g.dato:active em,.cal-g.dato.on b,.cal-g.dato.on em{color:var(--su-inchiostro)}
 .cal-g.oggi{outline:2px solid var(--senape);outline-offset:-2px}
+/* la colonna dei totali di settimana, in fondo a ogni riga */
+.cal-w{min-height:44px;border-radius:3px;background:var(--traccia);display:flex;align-items:center;justify-content:center}
+.cal-w em{font-size:10px}
+/* L'ultima riga chiude la colonna: il totale del mese, scritto in negativo
+   perché è la riga che riassume tutte le altre. */
+.cal-mese{grid-column:1/8;display:flex;align-items:center;justify-content:flex-end;padding-right:9px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:var(--tenue)}
+.cal-w.mese{background:var(--traccia);border:1.5px solid var(--inchiostro);min-height:34px}
+.cal-w.mese em{font-size:12px}
 .mese-num{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--linea)}
 .mese-num .cifra-m{margin:5px 0 0}
 .mese-grasso{margin-top:16px;padding:14px;background:var(--carta);border:1px solid var(--linea);border-radius:3px}
 .mese-grasso .cifra-g{margin-top:7px}
-.legenda-cal{display:flex;flex-wrap:wrap;gap:12px;margin-top:13px}
-.legenda-cal .lg i{width:14px;height:3px;border-radius:2px;display:inline-block;background:var(--neutro)}
-.legenda-cal .lg i.sotto{background:var(--verde)}
-.legenda-cal .lg i.medio{background:var(--blu)}
-.legenda-cal .lg i.oltre{background:var(--rosso)}
 
 /* storico */
 .grafico{display:flex;gap:4px;align-items:flex-end;height:140px;margin-top:14px;position:relative}
@@ -913,6 +920,12 @@ function grammiGrasso(kcal){ return (S.ob.fab-kcal)/KCAL_PER_KG*1000; }
 function grammiPersi(kcal){ return Math.max(0,grammiGrasso(kcal)); }
 function grammiSopra(kcal){ return Math.max(0,-grammiGrasso(kcal)); }
 function grammiMax(){ return S.ob.fab/KCAL_PER_KG*1000; }
+/* I grammi come si leggono nello storico: col segno, e col colore che dice da
+   che parte stanno. Positivo è grasso risparmiato, sotto zero è ripreso. */
+function grammiScritti(gr){
+  var v=Math.round(gr);
+  return '<em class="'+(v<0?"gu":"gi")+'">'+(v<0?"\u2212":"+")+num(Math.abs(v))+'</em>';
+}
 function grammiTarget(){ return Math.max(1,(S.ob.fab-S.ob.kcal)/KCAL_PER_KG*1000); }
 function lerp(a,b,t){ return Math.round(a+(b-a)*t); }
 function coloreGrassi(gr){
@@ -1342,28 +1355,39 @@ function pannelloMese(){
       '<button class="frec" data-az="mese" data-v="1"'+(m>=oggiM?" disabled":"")+' aria-label="mese successivo">›</button>'+
     '</div>';
 
+  /* Il calendario si costruisce per settimane, non per giorni di fila: in fondo
+     a ogni riga ci va il totale della settimana, e per sommarlo bisogna sapere
+     dove la riga finisce. Le caselle prima del primo e dopo l'ultimo si
+     riempiono di vuoto, se no l'ottava colonna si sfalserebbe. */
+  var settimane=[], riga=[];
+  for(var i=0;i<primoGiorno;i++) riga.push(0);
+  for(var g=1;g<=neiMese;g++){ riga.push(g); if(riga.length===7){ settimane.push(riga); riga=[]; } }
+  if(riga.length){ while(riga.length<7) riga.push(0); settimane.push(riga); }
+
   h+='<div class="cal">';
   ["L","M","M","G","V","S","D"].forEach(function(l){ h+='<div class="cal-l">'+l+'</div>'; });
-  for(var i=0;i<primoGiorno;i++) h+='<div class="cal-g vuota"></div>';
-  for(var g=1;g<=neiMese;g++){
-    var iso=m+"-"+p2(g), v=S.indice[iso];
-    var cl=(iso===oggi?" oggi":"");
-    if(!v){ h+='<div class="cal-g spenta'+cl+'">'+g+'</div>'; continue; }
-    /* Ogni giorno con dati si tocca e si apre qui sotto. I giorni vuoti sono
-       grigi e piatti: si vede che non c'è niente da aprire, non sembrano
-       pulsanti rotti. */
-    var qual=v.kcal<=S.ob.kcal?"sotto":(v.kcal<=S.ob.fab?"medio":"oltre");
-    h+='<button class="cal-g dato '+qual+cl+(S.aperto===iso&&S.apertoDove==="cal"?" on":"")+
-       '" data-az="apri" data-dove="cal" data-d="'+iso+'">'+g+'<i></i></button>';
-  }
+  h+='<div class="cal-l">SETT</div>';
+  settimane.forEach(function(r){
+    var somma=0, quanti=0;
+    r.forEach(function(g){
+      if(!g){ h+='<div class="cal-g vuota"></div>'; return; }
+      var iso=m+"-"+p2(g), v=S.indice[iso], cl=(iso===oggi?" oggi":"");
+      /* Ogni giorno con dati si tocca e si apre qui sotto. I giorni vuoti sono
+         grigi e piatti: si vede che non c'è niente da aprire, non sembrano
+         pulsanti rotti. */
+      if(!v){ h+='<div class="cal-g spenta'+cl+'"><b>'+g+'</b></div>'; return; }
+      var gr=grammiGrasso(v.kcal); somma+=gr; quanti++;
+      h+='<button class="cal-g dato'+cl+(S.aperto===iso&&S.apertoDove==="cal"?" on":"")+
+         '" data-az="apri" data-dove="cal" data-d="'+iso+'"><b>'+g+'</b>'+grammiScritti(gr)+'</button>';
+    });
+    h+='<div class="cal-w">'+(quanti?grammiScritti(somma):'')+'</div>';
+  });
+  if(t.n>0) h+='<div class="cal-mese">MESE</div><div class="cal-w mese">'+grammiScritti(t.persi-t.presi)+'</div>';
   h+='</div>';
 
-  h+='<div class="legenda-cal">'+
-     '<span class="lg"><i class="sotto"></i>Sotto l’obiettivo</span>'+
-     '<span class="lg"><i class="medio"></i>In deficit</span>'+
-     '<span class="lg"><i class="oltre"></i>Sopra il fabbisogno</span>'+
-     '</div>';
-  h+='<div class="p-piede">Tocca un giorno del calendario per aprirne la scheda.</div>';
+  h+='<div class="p-piede">I grammi di grasso di ogni giorno: <span class="gi">in verde</span> quelli persi, '+
+     '<span class="gu">in rosso</span> quelli ripresi. In fondo a ogni riga il totale della settimana, '+
+     'e qui sotto quello del mese. Tocca un giorno per aprirne la scheda.</div>';
   /* La scheda va qui, attaccata al calendario: in fondo al pannello resterebbe
      sotto lo schermo e il tocco sembrerebbe non aver fatto niente. */
   if(S.aperto&&S.apertoDove==="cal"&&S.aperto.slice(0,7)===m){

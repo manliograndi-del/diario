@@ -230,9 +230,26 @@ Non ribaltarle senza dirglielo esplicitamente.
   approvato. **Se un giorno chiede di più, sedici pixel diventano trenta o
   quaranta e torna il salto**: la strada non è alzare il numero, è disegnare due
   schermate.
+- **Nel calendario dello Storico ogni giorno porta scritti i suoi grammi**
+  (chiesto il 2026-08-30), verdi se persi e rossi se ripresi: `grammiScritti()`.
+  Prima c'era una lineetta a tre colori (sotto l'obiettivo / in deficit / sopra
+  il fabbisogno) che diceva molto meno — lui voleva "un'idea generale" del
+  grasso, e il numero scritto è quella. Il numero del giorno è diventato
+  l'etichetta piccola: il messaggio sono i grammi.
+  **La griglia ha otto colonne, non sette**: l'ottava è il totale della
+  settimana, e per sommarlo il calendario si costruisce per righe intere — le
+  caselle prima del primo giorno e dopo l'ultimo si riempiono di vuoto, se no
+  l'ottava colonna si sfalsa. L'ultima riga è il totale del mese, che chiude la
+  colonna; è lo stesso numero del blocco "Grasso perso nel mese" qui sotto, che
+  resta perché lì c'è anche la spiegazione.
+  Il verde e il rosso valgono **anche sul totale del mese**: è la stessa lingua
+  in tutto il calendario, e un fondo scuro con la scritta bianca gliela toglieva.
+  Su un giorno toccato o aperto il fondo diventa inchiostro, quindi lì numero e
+  grammi passano a `--su-inchiostro`: senza, il verde su nero non si legge.
+  Provato a 390 e a 320 px, chiaro e scuro, con i totali di settimana
+  confrontati a mano con la somma dei loro giorni.
 - **Lo Storico si apre sul mese** (chiesto il 2026-08-21). Calendario del mese con i
-  giorni registrati toccabili, una lineetta colorata sotto il numero — verde sotto
-  l'obiettivo, blu in deficit, rossa sopra il fabbisogno — e sotto i totali: grammi
+  giorni registrati toccabili e sotto i totali: grammi
   di grasso persi (o guadagnati) nel mese, giorni registrati, giorni sotto
   l'obiettivo, medie di calorie, proteine, carboidrati e grassi.
   Le frecce si fermano al primo mese registrato e al mese corrente; i mesi vuoti in
