@@ -274,6 +274,17 @@ button.sg{padding:2px 0}
 @keyframes rimbalzo-dx{40%{transform:translateX(13px)}100%{transform:none}}
 .rimbalza-sx{animation:rimbalzo-sx .3s cubic-bezier(.3,0,.3,1)}
 .rimbalza-dx{animation:rimbalzo-dx .3s cubic-bezier(.3,0,.3,1)}
+/* Il cambio di giorno: il contenuto entra dal lato da cui viene, sedici pixel
+   e un velo di trasparenza, in un quinto di secondo. Non è la transizione di
+   agosto, quella che lui aveva bocciato dicendo "mi sembra proprio che faccia
+   un salto": lì la pagina scivolava via intera e ne arrivava un'altra, e per
+   farlo bene servirebbero due copie della pagina alla volta. Qui la pagina è
+   una sola, già disegnata coi numeri nuovi, e si limita ad assestarsi. Sedici
+   pixel e non di più: deve dire da che parte sei andato, non farsi guardare. */
+@keyframes entra-avanti{from{transform:translateX(16px);opacity:.45}to{transform:none;opacity:1}}
+@keyframes entra-indietro{from{transform:translateX(-16px);opacity:.45}to{transform:none;opacity:1}}
+.entra-avanti{animation:entra-avanti .19s cubic-bezier(.2,.7,.3,1)}
+.entra-indietro{animation:entra-indietro .19s cubic-bezier(.2,.7,.3,1)}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -1560,9 +1571,11 @@ document.getElementById("app").addEventListener("click",function(ev){
     var chiude=(S.aperto===d&&S.apertoDove===dove)||(dove==="lista"&&d===S.data&&S.vista==="oggi");
     /* Chiudere il giorno vuol dire tornare a oggi: la striscia, se era
        arretrata, torna a finire su oggi insieme al resto. */
+    var v=verso(S.aperto||S.data, chiude?S.data:d);
     if(chiude){S.aperto=null;S.finestra=null;}
     else apriGiorno(d,dove);
     render();
+    if(S.vista==="oggi") entrata(v);
   }
   else if(az==="mese"){ S.mese=meseSposta(S.mese||meseDiOggi(),Number(v)); S.aperto=null; render(); }
   else if(az==="tema"){ S.tema=b.getAttribute("data-t"); salvaCfg(); render(); }
@@ -1613,6 +1626,22 @@ document.getElementById("app").addEventListener("click",function(ev){
    quindi lavora direttamente sulla pagina già in piedi. Il classList.remove più
    il offsetWidth servono a farlo ripartire anche se il dito insiste: senza,
    dalla seconda volta in poi il browser non lo rifà. */
+/* Va chiamata **dopo** render(): la pagina viene rifatta da capo ogni volta,
+   quindi `.corpo` di prima non esiste più. Il remove + offsetWidth serve a far
+   ripartire l'animazione quando i giorni si cambiano uno dietro l'altro:
+   senza, dalla seconda volta in poi il browser non la rifà. */
+function entrata(verso){
+  var e=document.querySelector(".corpo"); if(!e||!verso) return;
+  var cl=verso>0?"entra-avanti":"entra-indietro";
+  e.classList.remove("entra-avanti","entra-indietro");
+  void e.offsetWidth;
+  e.classList.add(cl);
+  e.addEventListener("animationend",function(){ e.classList.remove(cl); },{once:true});
+}
+/* Da che parte si è andati, per sapere da dove far entrare il contenuto.
+   Vale anche per un tocco su un cerchio lontano: conta la direzione nel tempo,
+   non quanti giorni si è saltato. */
+function verso(daIso,aIso){ return aIso===daIso?0:(aIso>daIso?1:-1); }
 function rimbalzo(n){
   var e=document.querySelector(".corpo"); if(!e) return;
   var cl=(n>0)?"rimbalza-sx":"rimbalza-dx";
@@ -1643,6 +1672,7 @@ function giornoScorri(n){
      aperto, arrivando su quel giorno il riquadro sarebbe rimasto vuoto */
   leggiPalestra();
   render();
+  entrata(n);
 }
 
 var CORSA=60, BORDO=26;

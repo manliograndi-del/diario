@@ -212,16 +212,24 @@ Non ribaltarle senza dirglielo esplicitamente.
   lavora sulla pagina già in piedi; il `classList.remove` + `offsetWidth` servono a
   farlo ripartire quando il dito insiste. **Non è la transizione fra i giorni**, che
   è stata tolta: questo è un movimento di risposta, e quello gli va bene.
-- **Il cambio giorno non ha nessuna transizione**: il giorno nuovo compare e basta.
-  Una ce n'era, chiesta e tolta lo stesso giorno (2026-08-22). Provata a 0,24 s e poi
-  a 0,36 s, con partenza quasi invisibile e la curva che distribuisce il movimento:
-  a Manlio sembrava un salto in tutte le versioni. **Non rimetterla se non la chiede
-  lui**, e se la chiede sappi che il problema non era la velocità.
-  Il motivo di fondo: l'app disegna **una schermata per volta**, quindi la pagina
-  nuova appare per forza già al suo posto e può solo scivolarci dentro. Una
-  transizione che convince davvero è quella in cui il dito trascina la pagina vecchia
-  mentre arriva la nuova, e vuole due schermate disegnate insieme — un'altra
-  architettura, non un ritocco. Se lo chiede, digli che costa quello.
+- **Il cambio giorno ha un accenno di movimento, non una transizione**
+  (`entrata()`, dal 2026-08-29): il contenuto entra dal lato da cui vieni, 16 px e
+  un velo di trasparenza, 0,19 s. Vale per il dito e per il tocco su un cerchio,
+  e la direzione la dà `verso()` confrontando le due date — anche saltando cinque
+  giorni conta solo se sei andato avanti o indietro nel tempo.
+  **La differenza con quella bocciata è tutta qui e va capita prima di
+  toccarla.** Ad agosto la pagina scivolava via intera e ne arrivava un'altra;
+  provata a 0,24 s e poi a 0,36 s, e a Manlio sembrava "un salto" in ogni
+  versione — il problema non era la velocità. Il motivo di fondo: l'app disegna
+  **una schermata per volta**, quindi la pagina nuova è già al suo posto e può
+  solo scivolarci dentro; la transizione che convince davvero è quella in cui il
+  dito trascina la vecchia mentre arriva la nuova, e vuole due schermate
+  disegnate insieme — un'altra architettura, non un ritocco.
+  Quella di adesso non prova a essere quella: la pagina è una sola, coi numeri
+  già nuovi, e si limita ad assestarsi. È parente del rimbalzo, che lui aveva
+  approvato. **Se un giorno chiede di più, sedici pixel diventano trenta o
+  quaranta e torna il salto**: la strada non è alzare il numero, è disegnare due
+  schermate.
 - **Lo Storico si apre sul mese** (chiesto il 2026-08-21). Calendario del mese con i
   giorni registrati toccabili, una lineetta colorata sotto il numero — verde sotto
   l'obiettivo, blu in deficit, rossa sopra il fabbisogno — e sotto i totali: grammi
