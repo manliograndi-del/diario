@@ -684,9 +684,18 @@ function salva(){
    quella voce andrebbe persa: il telefono può congelare la pagina senza
    preavviso. Qui la scriviamo subito. */
 function salvaSeInSospeso(){ if(tSalva) salvaOra(); }
-window.addEventListener("pagehide",salvaSeInSospeso);
+/* **E la stessa cosa per la copia su Drive.** Il 2026-09-02 Manlio ha perso i
+   dati del telefono e ha ripreso da Drive: sono tornati tutti i giorni fino al
+   31 agosto, e il 1º settembre no — quel giorno l'aveva segnato, ma la copia su
+   Drive aspettava (allora un minuto intero) e l'app se n'era andata prima. Una
+   copia che aspetta e non parte mai non è una copia. Adesso, se ce n'è una in
+   attesa e l'app sta per sparire, parte subito: la pagina è ancora viva, la
+   richiesta fa in tempo. */
+function driveSeInSospeso(){ if(tDrive) driveSalva(false); }
+function inPartenza(){ salvaSeInSospeso(); driveSeInSospeso(); }
+window.addEventListener("pagehide",inPartenza);
 document.addEventListener("visibilitychange",function(){
-  if(document.visibilityState==="hidden") salvaSeInSospeso();
+  if(document.visibilityState==="hidden") inPartenza();
 });
 function aggiornaSpia(){
   var e=document.querySelector(".spia"); if(!e)return;
@@ -2050,7 +2059,7 @@ function driveScollega(){
 function driveFraPoco(){
   if(!S.drive.on) return;
   clearTimeout(tDrive);
-  tDrive=setTimeout(function(){ driveSalva(false); },60000);
+  tDrive=setTimeout(function(){ driveSalva(false); },25000);
 }
 function quandoSalvato(ts){
   if(!ts) return "mai";

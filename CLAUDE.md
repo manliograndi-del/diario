@@ -259,6 +259,17 @@ Non ribaltarle senza dirglielo esplicitamente.
   grammi passano a `--su-inchiostro`: senza, il verde su nero non si legge.
   Provato a 390 e a 320 px, chiaro e scuro, con i totali di settimana
   confrontati a mano con la somma dei loro giorni.
+- **Una copia su Drive in attesa parte subito se l'app se ne va**
+  (`driveSeInSospeso`, dal 2026-09-02). Quel giorno Manlio ha perso i dati del
+  telefono e ha ripreso da Drive: sono tornati tutti i giorni **fino al 31
+  agosto**, e il 1º settembre no. Quel giorno l'aveva segnato, ma la copia su
+  Drive aspettava — allora un minuto intero — e l'app era sparita prima che
+  scadesse. **Una copia che aspetta e non parte mai non è una copia.**
+  Adesso l'attesa è di 25 secondi, e quando la pagina va in secondo piano o
+  viene chiusa la copia in sospeso parte immediatamente, mentre la pagina è
+  ancora viva e la richiesta fa in tempo. È la stessa idea di
+  `salvaSeInSospeso()` per la memoria del telefono, applicata alla rete.
+  Vale anche nella Palestra.
 - **`chiediMemoriaStabile()` chiede a Chrome di non buttare via i dati**
   (`navigator.storage.persist()`), dal 2026-09-02. Quel giorno Manlio ha trovato
   il Diario vuoto sul telefono. **Non è stata l'app**: in tutto il codice non
