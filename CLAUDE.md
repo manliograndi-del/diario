@@ -259,6 +259,37 @@ Non ribaltarle senza dirglielo esplicitamente.
   grammi passano a `--su-inchiostro`: senza, il verde su nero non si legge.
   Provato a 390 e a 320 px, chiaro e scuro, con i totali di settimana
   confrontati a mano con la somma dei loro giorni.
+- **`ricostruisciIndice()` rimette in piedi l'elenco dei giorni** leggendo i
+  `diario.g.<data>`. Gira a ogni avvio e **aggiunge soltanto**: un giorno che
+  l'indice ha già non lo tocca, così un totale corretto non viene mai riscritto
+  da qui.
+  Nasce dal 2026-09-02, e la diagnosi è venuta da un dettaglio che ha notato
+  Manlio: il Diario era senza nessun giorno **mentre la Palestra era intatta**.
+  Le due app vivono nella stessa memoria dello stesso telefono, e la pulizia del
+  browser porta via un sito tutto insieme: quindi non era stata quella. Restava
+  un solo sospetto — `diario.indice` rovinato, per esempio da una scrittura
+  interrotta a metà. I giorni veri stanno ognuno per conto suo e non li aveva
+  toccati nessuno.
+  **Se un giorno l'app sembra vuota, questa è la prima cosa da guardare**: i
+  dati possono esserci tutti e mancare solo l'elenco.
+- **`leggi()` distingue due guasti che prima confondeva.** Se il browser non dà
+  la memoria (navigazione privata) `memOk` diventa falso ed è un problema di
+  tutta l'app; se invece è un singolo valore a essere illeggibile, il browser
+  sta benissimo e va solo restituito il valore di riserva. Prima bastava un
+  valore rovinato per far comparire "questo browser non permette il
+  salvataggio", falso e allarmante proprio mentre l'app si stava rimettendo in
+  piedi da sola.
+- **Anche un giorno passato si può riempire** (dal 2026-09-02). Era bloccato di
+  proposito — "un giorno passato non si modifica" — finché Manlio non ha perso
+  un giorno e non ha avuto nessun modo di riscriverlo: una regola che ti
+  impedisce di rimettere a posto le tue cose è una regola sbagliata.
+  Il pulsante dice **su quale giorno** stai scrivendo (`Aggiungi a lunedì 31
+  agosto`) e nella schermata Aggiungi c'è un avviso in cima: quella è la difesa,
+  non il divieto. `S.scrivo` è il giorno bersaglio e si azzera cambiando
+  schermata dalla barra. Le voci di un giorno passato hanno il loro "togli".
+  **`scriviGiorno()` è separato da `salvaOra()` apposta**: quello sa scrivere
+  solo `S.data`, e allargarlo avrebbe voluto dire mettere le mani nel
+  salvataggio di oggi, che è la cosa che non deve rompersi mai.
 - **Una copia su Drive in attesa parte subito se l'app se ne va**
   (`driveSeInSospeso`, dal 2026-09-02). Quel giorno Manlio ha perso i dati del
   telefono e ha ripreso da Drive: sono tornati tutti i giorni **fino al 31

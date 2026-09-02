@@ -422,8 +422,18 @@ function applicaTema(){
 
 /* ---------- memoria: localStorage ---------- */
 var memOk=true;
+/* Due guasti diversi, e prima erano confusi in uno: se **il browser** non dà la
+   memoria (navigazione privata) è un problema di tutta l'app, e `memOk` diventa
+   falso; se invece è **un singolo valore** a essere illeggibile — una scrittura
+   interrotta a metà — il browser sta benissimo e va solo restituito il valore
+   di riserva. Confonderli faceva comparire "questo browser non permette il
+   salvataggio", che è falso e spaventa, proprio nel momento in cui l'app si
+   stava rimettendo in piedi da sola. */
 function leggi(k,def){
-  try{var v=localStorage.getItem(k);return v==null?def:JSON.parse(v);}catch(e){memOk=false;return def;}
+  var v;
+  try{ v=localStorage.getItem(k); }catch(e){ memOk=false; return def; }
+  if(v==null) return def;
+  try{ return JSON.parse(v); }catch(e){ return def; }
 }
 function scrivi(k,v){
   try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){memOk=false;return false;}
@@ -435,7 +445,7 @@ var S={
   mese:null, apertoDove:"lista", finestra:null,
   drive:{on:false,id:null,ultimo:null,rev:null}, driveStato:"",
   passi:0, apertoPassi:0, daContapassi:null, pal:{},
-  cerchio:false,
+  cerchio:false, scrivo:null,
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
   aperto:null, apertoVoci:[], export:"", importa:"", msg:null, spia:"", focus:null
@@ -452,6 +462,7 @@ function avvia(){
              salvaCfg();
            } }
   S.indice=leggi(K_IDX,{})||{};
+  ricostruisciIndice();
   leggiPalestra();
   S.data=oggiISO();
   S.daContapassi=leggiMessaggioPassi();
@@ -668,6 +679,57 @@ function salvaOra(){
   ok=scrivi(K_IDX,S.indice)&&ok;
   return ok;
 }
+/* Scrive le voci di un giorno **che non è oggi**. Serve da quando si possono
+   riempire i giorni passati: la strada di sempre (`salvaOra`) sa scrivere solo
+   `S.data`, e allargarla avrebbe voluto dire toccare il salvataggio di oggi,
+   che è la cosa che non deve rompersi mai. I passi di quel giorno restano
+   quelli che erano: qui si toccano solo le voci. */
+/* ---------- rimettere in piedi l'elenco dei giorni ----------
+   Il 2026-09-02 il Diario di Manlio si è trovato senza nessun giorno mentre la
+   Palestra, che vive nella stessa memoria dello stesso telefono, era intatta.
+   Quello esclude la pulizia del browser, che porta via tutto un sito insieme, e
+   lascia un solo sospetto: si è rovinato `diario.indice`. Basta una scrittura
+   interrotta a metà — memoria piena, telefono che chiude la pagina — perché
+   quel testo diventi illeggibile; al riavvio `leggi()` non lo capisce, torna
+   `{}`, e da lì in poi l'app crede di non avere nessun giorno.
+
+   **Ma i giorni veri stanno ognuno per conto suo**, in `diario.g.<data>`, e
+   quelli non li ha toccati nessuno. L'elenco si può ricostruire leggendoli.
+
+   Gira a ogni avvio, e **aggiunge soltanto**: un giorno che l'indice ha già non
+   viene toccato, così un totale corretto non viene mai riscritto da questa. */
+function ricostruisciIndice(){
+  var rimessi=0;
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(!k||k.indexOf(K_G)!==0) continue;
+      var iso=k.slice(K_G.length);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(iso)||S.indice[iso]) continue;
+      var g=leggi(k,null); if(!g) continue;
+      var voci=g.voci||[], passi=Number(g.passi)||0;
+      if(voci.length===0&&!passi) continue;
+      var t=totali(voci);
+      S.indice[iso]={kcal:Math.round(t.kcal),p:Math.round(t.p),c:Math.round(t.c),g:Math.round(t.g),n:voci.length,passi:passi};
+      rimessi++;
+    }
+  }catch(e){}
+  if(rimessi){ scrivi(K_IDX,S.indice);
+    S.msg=rimessi===1?"Ho ritrovato un giorno che era uscito dall\u2019elenco e l\u2019ho rimesso a posto."
+                     :"Ho ritrovato "+rimessi+" giorni che erano usciti dall\u2019elenco e li ho rimessi a posto."; }
+  return rimessi;
+}
+function scriviGiorno(iso,voci){
+  var t=totali(voci), g=leggi(K_G+iso,{voci:[]}), passi=Number(g.passi)||0;
+  var ok=scrivi(K_G+iso,{voci:voci,totali:t,passi:passi});
+  if(voci.length===0&&!passi) delete S.indice[iso];
+  else S.indice[iso]={kcal:Math.round(t.kcal),p:Math.round(t.p),c:Math.round(t.c),g:Math.round(t.g),n:voci.length,passi:passi};
+  ok=scrivi(K_IDX,S.indice)&&ok;
+  S.spia=ok?"fatto":"errore"; aggiornaSpia();
+  setTimeout(function(){S.spia="";aggiornaSpia();},1600);
+  driveFraPoco();
+  return ok;
+}
 function salva(){
   S.spia="in corso"; aggiornaSpia();
   clearTimeout(tSalva);
@@ -737,15 +799,18 @@ document.addEventListener("visibilitychange",function(){
 /* ---------- azioni ---------- */
 function aggiungiVoce(a,gr,pasto){
   var f=gr/100;
-  S.voci.push({
+  var v={
     id:Date.now()+"-"+Math.random().toString(36).slice(2,7),
     nome:a.nome, grammi:gr,
     kcal:a.kcal*f, p:a.p*f, c:a.c*f, g:a.g*f,
     pasto:pasto, ora:oraOra()
-  });
+  };
   S.recenti=[{nome:a.nome,kcal:a.kcal,p:a.p,c:a.c,g:a.g,porz:gr}]
     .concat(S.recenti.filter(function(r){return r.nome!==a.nome;})).slice(0,14);
-  salvaCfg(); salva();
+  salvaCfg();
+  var iso=S.scrivo||S.data;
+  if(iso===S.data){ S.voci.push(v); salva(); }
+  else { S.apertoVoci=S.apertoVoci.concat([v]); scriviGiorno(iso,S.apertoVoci); }
   S.scelto=null; S.cerca=""; S.vista="oggi"; render();
 }
 
@@ -1033,7 +1098,7 @@ function ultimi7(){
 /* Dettaglio di una giornata: totali e voci raggruppate per pasto.
    Usato sia nella scheda che si apre dalla striscia dei 7 giorni,
    sia nello storico, così i due posti mostrano le stesse cose. */
-function dettaglioGiorno(voci,conRiepilogo,passi,data){
+function dettaglioGiorno(voci,conRiepilogo,passi,data,modificabile){
   voci=voci||[];
   passi=Number(passi)||0;
   var pal=data?palestraDi(data):null;
@@ -1090,7 +1155,9 @@ function dettaglioGiorno(voci,conRiepilogo,passi,data){
     l.forEach(function(v){
       h+='<div class="voce"><div class="v-corpo"><div class="v-nome">'+esc(v.nome)+'</div>'+
          '<div class="v-dati">'+(v.ora?esc(v.ora)+' \u00b7 ':"")+num(v.grammi)+' g \u00b7 '+num(v.kcal)+
-         ' kcal \u00b7 P '+num(v.p,1)+' \u00b7 C '+num(v.c,1)+' \u00b7 G '+num(v.g,1)+'</div></div></div>';
+         ' kcal \u00b7 P '+num(v.p,1)+' \u00b7 C '+num(v.c,1)+' \u00b7 G '+num(v.g,1)+'</div></div>'+
+         (modificabile?'<button class="v-togli" data-az="togli" data-id="'+v.id+'" data-g="'+esc(data||"")+'">togli</button>':'')+
+         '</div>';
     });
     h+='</div>';
   });
@@ -1199,12 +1266,19 @@ function vistaOggi(){
     // per un giorno passato l'intestazione sta già sul quadrante qui sopra
     h+='<section class="pannello"><div class="p-testa">'+
        '<span class="etichetta">Cosa hai mangiato</span>'+
-       '</div>'+dettaglioGiorno(voci,false,pa,aperto)+'</section>';
+       '</div>'+dettaglioGiorno(voci,false,pa,aperto,true)+'</section>';
   }
 
 
-  // un giorno passato non si modifica: niente pulsante e niente elenco con "togli"
-  if(passato) return h;
+  /* **Anche un giorno passato si può riempire**, dal 2026-09-02. Prima era
+     bloccato di proposito, per non toccarlo per sbaglio. Poi Manlio ha perso
+     un giorno e non aveva nessun modo di riscriverlo: una regola che ti impedisce
+     di rimettere a posto le tue cose è una regola sbagliata. Il pulsante dice
+     ad alta voce **su quale giorno** stai scrivendo, che è la difesa vera. */
+  if(passato){
+    h+='<button class="b1" data-az="aggiungi-a" data-d="'+aperto+'">Aggiungi a '+dataEstesa(aperto)+'</button>';
+    return h;
+  }
 
   h+='<button class="b1" data-az="vista" data-v="aggiungi">Aggiungi quello che hai mangiato</button>';
 
@@ -1249,6 +1323,10 @@ function mini(et,val,ob){
 
 function vistaAggiungi(){
   var h='<button class="indietro" data-az="vista" data-v="oggi">← Torna a oggi</button>';
+  /* Se stai riempiendo un giorno passato dev'essere impossibile non accorgersene. */
+  if(S.scrivo&&S.scrivo!==S.data)
+    h+='<div class="avviso"><span>Stai scrivendo su <strong>'+dataEstesa(S.scrivo)+'</strong>, non su oggi.</span>'+
+       '<button data-az="vista" data-v="oggi">annulla</button></div>';
 
   if(S.scelto){
     var a=S.scelto, f=S.grammi/100;
@@ -1633,9 +1711,16 @@ document.getElementById("app").addEventListener("click",function(ev){
   var b=ev.target.closest("[data-az]"); if(!b) return;
   var az=b.getAttribute("data-az"), v=b.getAttribute("data-v");
 
-  if(az==="vista"){ S.vista=v; S.scelto=null; S.focus=null; S.aperto=null; S.finestra=null; if(v==="aggiungi"){S.pasto=pastoDaOra();} render(); }
+  if(az==="vista"){ S.vista=v; S.scelto=null; S.focus=null; S.aperto=null; S.finestra=null; S.scrivo=null; if(v==="aggiungi"){S.pasto=pastoDaOra();} render(); }
   else if(az==="chiudi-msg"){ S.msg=null; render(); }
-  else if(az==="togli"){ var id=b.getAttribute("data-id"); S.voci=S.voci.filter(function(x){return x.id!==id;}); salva(); render(); }
+  else if(az==="togli"){
+    var id=b.getAttribute("data-id"), gio=b.getAttribute("data-g")||S.data;
+    var fuori=function(x){ return x.id!==id; };
+    if(gio===S.data){ S.voci=S.voci.filter(fuori); salva(); }
+    else { S.apertoVoci=S.apertoVoci.filter(fuori); scriviGiorno(gio,S.apertoVoci); }
+    render();
+  }
+  else if(az==="aggiungi-a"){ S.scrivo=b.getAttribute("data-d"); S.vista="aggiungi"; S.scelto=null; S.cerca=""; render(); }
   else if(az==="scegli"){ var a=trovaPerId(b.getAttribute("data-id")); if(a){S.scelto=a;S.grammi=a.porz||100;S.focus=null;render();} }
   else if(az==="scegli-rec"){ var r=S.recenti[Number(b.getAttribute("data-i"))]; if(r){S.scelto=r;S.grammi=r.porz||100;S.focus=null;render();} }
   else if(az==="deseleziona"){ S.scelto=null; S.focus=null; render(); }
