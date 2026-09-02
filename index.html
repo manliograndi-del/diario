@@ -373,6 +373,12 @@ var K_CFG="diario.config", K_IDX="diario.indice", K_G="diario.g.";
    Le due app vivono sullo stesso indirizzo e dividono lo stesso localStorage:
    il prefisso è tutta la separazione che c'è. */
 var K_PAL="palestra.indice";
+/* La copia di riserva delle impostazioni. **L'indice dei giorni si può sempre
+   ricostruire dai giorni; questo no.** Gli alimenti che si è salvato lui, gli
+   obiettivi e il collegamento a Drive esistono in un posto solo, e se quel
+   posto diventa illeggibile non c'è niente da cui ricavarli. Dal 2026-09-02 se
+   ne scrivono due copie: se la prima non si legge, si prende la seconda. */
+var K_CFG2="diario.config.bis";
 var OB_DEF={kcal:1500,fab:2200,p:160,c:120,g:45,peso:97};
 /* Il fabbisogno è sceso da 2500 a 2200 il 2026-08-21, chiesto da Manlio.
    Cambiare la costante non basta: chi usa già l'app ha il vecchio numero
@@ -452,7 +458,8 @@ var S={
 };
 
 function avvia(){
-  var cfg=leggi(K_CFG,null);
+  var cfg=leggi(K_CFG,null), diRiserva=false;
+  if(!cfg){ cfg=leggi(K_CFG2,null); diRiserva=!!cfg; }
   if(cfg){ S.ob=Object.assign({},OB_DEF,cfg.ob||{}); S.miei=cfg.miei||[]; S.recenti=cfg.recenti||[];
            if(cfg.drive) S.drive=Object.assign({on:false,id:null,ultimo:null,rev:null},cfg.drive);
            if(cfg.tema==="chiaro"||cfg.tema==="scuro"||cfg.tema==="auto") S.tema=cfg.tema;
@@ -461,6 +468,7 @@ function avvia(){
              if(S.ob.fab===FAB_VECCHIO) S.ob.fab=FAB_NUOVO;
              salvaCfg();
            } }
+  if(diRiserva){ salvaCfg(); S.msg="Le impostazioni erano illeggibili: le ho riprese dalla copia di riserva."; }
   S.indice=leggi(K_IDX,{})||{};
   ricostruisciIndice();
   leggiPalestra();
@@ -659,7 +667,10 @@ function chiediMemoriaStabile(){
     if(S.vista==="impostazioni") render();
   }).catch(function(){});
 }
-function salvaCfg(){ scrivi(K_CFG,{ob:S.ob,miei:S.miei,recenti:S.recenti,tema:S.tema,fabV:FAB_V,drive:S.drive,cerchio:S.cerchio}); }
+function salvaCfg(){
+  var c={ob:S.ob,miei:S.miei,recenti:S.recenti,tema:S.tema,fabV:FAB_V,drive:S.drive,cerchio:S.cerchio};
+  scrivi(K_CFG,c); scrivi(K_CFG2,c);
+}
 
 function totali(v){
   return (v||S.voci).reduce(function(t,x){
@@ -1933,7 +1944,7 @@ document.getElementById("app").addEventListener("input",function(ev){
 
 /* ---------- backup ---------- */
 function raccogli(){
-  var out={versione:1,ob:S.ob,miei:S.miei,indice:S.indice,giorni:{}};
+  var out={versione:1,ob:S.ob,miei:S.miei,recenti:S.recenti,indice:S.indice,giorni:{}};
   for(var i=0;i<localStorage.length;i++){
     var k=localStorage.key(i);
     if(k&&k.indexOf(K_G)===0) out.giorni[k.slice(K_G.length)]=leggi(k,null);
@@ -1960,7 +1971,15 @@ function ripristina(){
     if(d.indice) scrivi(K_IDX,d.indice);
     /* Niente fabV qui apposta: un backup di prima del 2026-08-21 riporta il
        fabbisogno a 2500, e al riavvio la conversione lo rimette a 2200. */
-    if(d.ob||d.miei) scrivi(K_CFG,{ob:d.ob||S.ob,miei:d.miei||S.miei,recenti:S.recenti,tema:S.tema,drive:S.drive});
+    /* Gli alimenti si **uniscono**, non si sostituiscono: un ripristino da un
+       file vecchio non deve far sparire quelli salvati da allora in poi. */
+    if(d.ob||d.miei){
+      var miei=(S.miei||[]).slice(), nomi={};
+      miei.forEach(function(x){ nomi[x.nome]=1; });
+      (d.miei||[]).forEach(function(x){ if(!nomi[x.nome]){ miei.push(x); nomi[x.nome]=1; } });
+      scrivi(K_CFG,{ob:d.ob||S.ob,miei:miei,recenti:d.recenti||S.recenti,tema:S.tema,drive:S.drive});
+      scrivi(K_CFG2,leggi(K_CFG,null));
+    }
     S.importa=""; S.msg="Ripristinato. Ricarico…";
     render(); setTimeout(function(){location.reload();},900);
   }catch(e){ S.msg="Quel testo non è un backup valido."; render(); }

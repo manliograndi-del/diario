@@ -259,6 +259,19 @@ Non ribaltarle senza dirglielo esplicitamente.
   grammi passano a `--su-inchiostro`: senza, il verde su nero non si legge.
   Provato a 390 e a 320 px, chiaro e scuro, con i totali di settimana
   confrontati a mano con la somma dei loro giorni.
+- **Le impostazioni si scrivono in due copie** (`diario.config` e
+  `diario.config.bis`, dal 2026-09-02): se la prima è illeggibile si prende la
+  seconda e si riscrive la prima. **L'indice dei giorni si può sempre
+  ricostruire dai giorni; questo no**: gli alimenti che si è salvato lui, gli
+  obiettivi e il collegamento a Drive esistono in un posto solo, e se quel posto
+  se ne va non c'è niente da cui ricavarli. Il 2026-09-02 Manlio ha perso
+  esattamente quelli — i giorni li aveva ripresi da Drive, gli alimenti no.
+  Nel backup ci sono sempre stati (`raccogli()` porta `miei`), e ora anche i
+  `recenti`; il guaio è che **la copia su Drive è uno specchio**: quando l'app
+  ha riaperto senza alimenti, la copia successiva ha specchiato anche quello.
+  Per la stessa ragione **`ripristina()` unisce gli alimenti invece di
+  sostituirli**: un ripristino da un file vecchio non deve far sparire quelli
+  salvati dopo.
 - **`ricostruisciIndice()` rimette in piedi l'elenco dei giorni** leggendo i
   `diario.g.<data>`. Gira a ogni avvio e **aggiunge soltanto**: un giorno che
   l'indice ha già non lo tocca, così un totale corretto non viene mai riscritto
