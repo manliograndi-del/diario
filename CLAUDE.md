@@ -259,6 +259,20 @@ Non ribaltarle senza dirglielo esplicitamente.
   grammi passano a `--su-inchiostro`: senza, il verde su nero non si legge.
   Provato a 390 e a 320 px, chiaro e scuro, con i totali di settimana
   confrontati a mano con la somma dei loro giorni.
+- **`chiediMemoriaStabile()` chiede a Chrome di non buttare via i dati**
+  (`navigator.storage.persist()`), dal 2026-09-02. Quel giorno Manlio ha trovato
+  il Diario vuoto sul telefono. **Non è stata l'app**: in tutto il codice non
+  c'è una riga che cancelli la memoria — verificato — quindi è stata la pulizia
+  automatica del browser o una cancellazione dei dati di navigazione. Contro la
+  prima questa è la difesa che esiste, e per un'app installata sulla schermata
+  Home Chrome di solito dice di sì senza chiedere niente. **Non è una garanzia**
+  e non va raccontata come tale: il file di backup scaricato resta l'unica cosa
+  che salva davvero. Lo stato risponde dopo il primo disegno, perciò se sta
+  guardando le Impostazioni la pagina si ridisegna quando arriva.
+  Ricordagli la differenza fra le due copie, perché l'ha capita al contrario una
+  volta: **Drive è uno specchio, il file scaricato è una fotografia**. Lo
+  specchio segue anche i guai — se i dati qui si rovinano, la copia di là
+  diventa rovinata anche lei — la fotografia no.
 - **Lo storico non si cancella mai.** Ogni giorno registrato resta in
   `diario.g.<data>` e in `diario.indice` per sempre; l'unica `delete` che c'è
   toglie dall'indice un giorno rimasto senza voci e senza passi, cioè un giorno
