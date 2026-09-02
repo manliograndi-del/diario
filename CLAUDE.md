@@ -259,6 +259,24 @@ Non ribaltarle senza dirglielo esplicitamente.
   grammi passano a `--su-inchiostro`: senza, il verde su nero non si legge.
   Provato a 390 e a 320 px, chiaro e scuro, con i totali di settimana
   confrontati a mano con la somma dei loro giorni.
+- **Lo storico non si cancella mai.** Ogni giorno registrato resta in
+  `diario.g.<data>` e in `diario.indice` per sempre; l'unica `delete` che c'è
+  toglie dall'indice un giorno rimasto senza voci e senza passi, cioè un giorno
+  che non è mai esistito. Non aggiungere potature "per tenere leggero": lo
+  spazio non è un problema (un anno di diario sta in poche decine di KB) e
+  quello che si cancella non torna.
+- **"Mese per mese" elenca tutti i mesi** (`pannelloMesi`, chiesto il
+  2026-09-02): uno per riga, i giorni registrati, la media al giorno e i grammi
+  di grasso col loro colore, e in fondo la riga "Da quando hai cominciato" col
+  totale di sempre. Toccando un mese il calendario qui sopra ci si sposta —
+  e la pagina ci scorre, se no il tocco sembrerebbe non aver fatto niente.
+  Con un mese solo il pannello non compare: direbbe quello che dice già il
+  calendario.
+  Nasce da una richiesta che sembrava una cosa e ne era un'altra: "vorrei che
+  tenesse lo storico per sempre". Lo storico per sempre c'era già — non si
+  cancella niente — ma i mesi passati si potevano guardare **solo uno alla
+  volta**, tornando indietro con la freccia. Il problema era vederli, non
+  tenerli.
 - **Lo Storico si apre sull'ultimo mese che ha dei giorni**, non sul mese di
   oggi. Il 2026-09-01 Manlio ha aperto lo Storico, ha visto il calendario di
   settembre vuoto e ha scritto "sono spariti tutti i dati". Non era sparito

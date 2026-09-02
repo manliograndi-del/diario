@@ -205,6 +205,15 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 .gg-d{font-size:14.5px;font-weight:500}
 .gg-m{font-family:var(--mono);font-size:10.5px;color:var(--tenue);margin-top:3px}
 .gg-k{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+/* la riga di un mese, nell'elenco di tutti i mesi: stessa forma di quella di un
+   giorno, così l'occhio non deve imparare due cose */
+.mrow{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 2px;border-bottom:1px solid var(--linea);text-align:left}
+.mrow.on{background:var(--traccia)}
+.mrow em{font-style:normal;font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mrow-n{font-size:14.5px;font-weight:500}
+.mrow-d{font-family:var(--mono);font-size:10.5px;color:var(--tenue);margin-top:3px}
+.mrow-tot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 2px 2px;margin-top:2px;border-top:1.5px solid var(--inchiostro)}
+.mrow-tot em{font-style:normal;font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
 .dett{padding:9px 2px 13px}
 
 /* navigazione */
@@ -1434,10 +1443,48 @@ function pannelloMese(){
   return h;
 }
 
+/* ---------- tutti i mesi, dal primo giorno registrato ----------
+   Chiesto il 2026-09-02: "vorrei che tenesse lo storico per sempre per sapere
+   anche quello che è successo nei mesi precedenti". Lo storico per sempre c'era
+   già — non si cancella niente, mai — ma i mesi passati si potevano guardare
+   solo uno alla volta, tornando indietro con la freccia. Qui ci sono tutti in
+   fila, e toccandone uno il calendario qui sopra ci si sposta. */
+function tuttiIMesi(){
+  var per={};
+  Object.keys(S.indice).forEach(function(d){
+    var m=d.slice(0,7);
+    if(!per[m]) per[m]={n:0,kcal:0,gr:0};
+    per[m].n++; per[m].kcal+=S.indice[d].kcal; per[m].gr+=grammiGrasso(S.indice[d].kcal);
+  });
+  return Object.keys(per).sort().reverse().map(function(m){ return {m:m,d:per[m]}; });
+}
+function pannelloMesi(){
+  var l=tuttiIMesi();
+  /* Con un mese solo questo elenco direbbe quello che dice già il calendario. */
+  if(l.length<2) return "";
+  var gTot=0, nTot=0, kTot=0;
+  l.forEach(function(x){ gTot+=x.d.gr; nTot+=x.d.n; kTot+=x.d.kcal; });
+  var h='<section class="pannello"><div class="etichetta">Mese per mese</div>';
+  l.forEach(function(x){
+    h+='<button class="mrow'+(x.m===S.mese?" on":"")+'" data-az="mese-va" data-v="'+x.m+'">'+
+       '<div><div class="mrow-n">'+maiuscola(meseEsteso(x.m))+'</div>'+
+       '<div class="mrow-d">'+x.d.n+(x.d.n===1?" giorno":" giorni")+' \u00b7 '+num(x.d.kcal/x.d.n)+' kcal al giorno</div></div>'+
+       grammiScritti(x.d.gr)+'</button>';
+  });
+  h+='<div class="mrow-tot"><div><div class="mrow-n">Da quando hai cominciato</div>'+
+     '<div class="mrow-d">'+nTot+(nTot===1?" giorno":" giorni")+' \u00b7 '+num(kTot/nTot)+' kcal al giorno</div></div>'+
+     grammiScritti(gTot)+'</div>';
+  h+='<div class="p-piede">Grammi di grasso: '+(gTot>=0?'in tutto ne hai persi circa '+num(Math.abs(gTot)/1000,2)+' kg'
+     :'in tutto ne hai messi su circa '+num(Math.abs(gTot)/1000,2)+' kg')+
+     '. \u00c8 una stima sui giorni registrati, non quello che dice la bilancia. '+
+     'Tocca un mese per vederlo nel calendario qui sopra.</div></section>';
+  return h;
+}
+
 function vistaStorico(){
   var giorni=Object.keys(S.indice).sort().reverse();
   if(giorni.length===0) return '<div class="vuoto">Lo storico si riempie da solo: ogni giorno registrato resta qui.</div>';
-  var h=pannelloMese(), ultimi=giorni.slice(0,14).slice().reverse();
+  var h=pannelloMese()+pannelloMesi(), ultimi=giorni.slice(0,14).slice().reverse();
   var max=Math.max.apply(null,[S.ob.kcal,1].concat(ultimi.map(function(d){return S.indice[d].kcal;})));
   var s7=giorni.slice(0,7);
   var m7={kcal:s7.reduce(function(a,d){return a+S.indice[d].kcal;},0)/s7.length,
@@ -1607,6 +1654,13 @@ document.getElementById("app").addEventListener("click",function(ev){
     else apriGiorno(d,dove);
     render();
     if(S.vista==="oggi") entrata(v);
+  }
+  else if(az==="mese-va"){
+    S.mese=b.getAttribute("data-v"); S.aperto=null; render();
+    /* il calendario sta più in su: senza portarcelo, il tocco sembrerebbe non
+       aver fatto niente */
+    var c=document.querySelector(".cal");
+    if(c&&c.scrollIntoView) c.scrollIntoView({behavior:"smooth",block:"center"});
   }
   else if(az==="mese"){ S.mese=meseSposta(S.mese||meseDiOggi(),Number(v)); S.aperto=null; render(); }
   else if(az==="tema"){ S.tema=b.getAttribute("data-t"); salvaCfg(); render(); }
