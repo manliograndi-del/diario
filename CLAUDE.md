@@ -259,6 +259,17 @@ Non ribaltarle senza dirglielo esplicitamente.
   grammi passano a `--su-inchiostro`: senza, il verde su nero non si legge.
   Provato a 390 e a 320 px, chiaro e scuro, con i totali di settimana
   confrontati a mano con la somma dei loro giorni.
+- **Lo Storico si apre sull'ultimo mese che ha dei giorni**, non sul mese di
+  oggi. Il 2026-09-01 Manlio ha aperto lo Storico, ha visto il calendario di
+  settembre vuoto e ha scritto "sono spariti tutti i dati". Non era sparito
+  niente — i 31 giorni di agosto erano tutti al loro posto, verificato — ma il
+  primo giorno di ogni mese l'app dava la peggiore notizia possibile, e falsa.
+  Se il mese corrente ha già dei giorni non cambia niente, perché l'ultimo mese
+  con dati *è* quello corrente. Vale anche nella Palestra, dove capita più
+  spesso: in palestra non ci va tutti i giorni.
+  E quando un mese è davvero vuoto ma ce ne sono altri, la scritta lo dice e
+  indica la freccia, invece di lasciare intendere il peggio.
+  **Non rimettere `S.mese||meseDiOggi()`.**
 - **Lo Storico si apre sul mese** (chiesto il 2026-08-21). Calendario del mese con i
   giorni registrati toccabili e sotto i totali: grammi
   di grasso persi (o guadagnati) nel mese, giorni registrati, giorni sotto

@@ -1333,7 +1333,15 @@ function pannelloMese(){
   var oggiM=meseDiOggi();
   var chiavi=Object.keys(S.indice).sort();
   var primoM=chiavi.length?chiavi[0].slice(0,7):oggiM;
-  var m=S.mese||oggiM;
+  /* **Si apre sull'ultimo mese che ha dei giorni, non sul mese di oggi.**
+     Il 1º settembre 2026 Manlio ha aperto lo Storico e ha visto un calendario
+     vuoto: "sono spariti tutti i dati". Non era sparito niente — il mese nuovo
+     era semplicemente ancora senza giorni — ma il primo giorno di ogni mese
+     l'app dava a chi la guarda la peggiore delle notizie possibili, e falsa.
+     Se il mese corrente ha già dei giorni `ultimoM` è il mese corrente, quindi
+     di norma non cambia niente. */
+  var ultimoM=chiavi.length?chiavi[chiavi.length-1].slice(0,7):oggiM;
+  var m=S.mese||ultimoM;
   if(m>oggiM) m=oggiM;
   if(m<primoM) m=primoM;
   S.mese=m;
@@ -1388,9 +1396,15 @@ function pannelloMese(){
   }
 
   if(t.n===0){
+    /* Un mese vuoto non vuol dire un diario vuoto: se ce ne sono altri, dillo
+       e indica la freccia, se no sembra che sia sparito tutto. */
+    var altrove=chiavi.length;
     h+='<div class="p-piede">'+(t.pal
       ?t.pal+(t.pal===1?' allenamento in palestra':' allenamenti in palestra')+', ma nessun giorno di cibo registrato in questo mese.'
-      :'Nessun giorno registrato in questo mese.')+'</div></section>';
+      :'Nessun giorno registrato in questo mese.')+
+      (altrove?' Gli altri mesi sono tutti qui: toccando la freccia \u2039 torni indietro. In tutto hai '+
+               altrove+(altrove===1?' giorno registrato':' giorni registrati')+'.':'')+
+      '</div></section>';
     return h;
   }
 
