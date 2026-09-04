@@ -292,6 +292,31 @@ Non ribaltarle senza dirglielo esplicitamente.
   valore rovinato per far comparire "questo browser non permette il
   salvataggio", falso e allarmante proprio mentre l'app si stava rimettendo in
   piedi da sola.
+- **Le caselle dei numeri si svuotano quando le tocchi** (chiesto il
+  2026-09-04: "quando scrivo la cifra a mano accadono cose molto strane").
+  Tre difetti in fila, e vanno capiti insieme perché il primo da solo non
+  bastava a spiegare niente:
+  1. la casella arriva **già piena** (100 g, o i passi di ieri), e per scriverci
+     50 bisognava cancellare col cursore in mezzo alle cifre vecchie. Ora
+     toccandola si svuota, e quello che batti è l'unica cosa che c'è dentro.
+     Se la lasci vuota e tocchi altrove torna il numero di prima
+     (`S.primaEra`): una casella svuotata per sbaglio non deve diventare zero;
+  2. a ogni tasto la pagina si ridisegna (serve: sopra cambiano le calorie), e
+     la casella veniva ricostruita **col numero già interpretato** — cancellare
+     tutto faceva ricomparire uno "0", e uno zero davanti non si toglieva più.
+     Adesso, finché la casella è quella che ha in mano, dentro resta il testo
+     che ha scritto (`S.grezzo`);
+  3. **erano `type="number"`, e su quelle Chrome non lascia rimettere il
+     cursore** (`setSelectionRange` solleva un errore, che veniva ingoiato).
+     Dopo ogni ridisegno il cursore tornava a inizio casella: si batteva "50" e
+     restava "05". Ora sono `type="text" inputmode="numeric"`, la tastiera è
+     sempre quella dei numeri, e le cifre si filtrano in ingresso.
+     **Non rimetterle `type="number"`**, o torna tutto.
+  Due bandiere tengono separato il dito dell'utente dai movimenti del fuoco che
+  facciamo noi: `focoDaRender` (il `focus()` che rimettiamo dopo il ridisegno,
+  che se no farebbe scattare lo svuotamento a ogni cifra) e `ridisegno`
+  (sostituire la pagina distrugge la casella e il browser lo racconta come un
+  "hai tolto il dito", che cancellava quello che stava scrivendo).
 - **Anche un giorno passato si può riempire** (dal 2026-09-02). Era bloccato di
   proposito — "un giorno passato non si modifica" — finché Manlio non ha perso
   un giorno e non ha avuto nessun modo di riscriverlo: una regola che ti

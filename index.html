@@ -445,13 +445,18 @@ function scrivi(k,v){
   try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){memOk=false;return false;}
 }
 
+/* Due bandiere per le caselle dei numeri: distinguono il dito dell'utente dai
+   movimenti del fuoco che facciamo noi ridisegnando la pagina. Spiegate per
+   esteso più sotto, dove si usano. */
+var focoDaRender=false, ridisegno=false;
+
 /* ---------- stato ---------- */
 var S={
   vista:"oggi", data:oggiISO(), voci:[], indice:{}, ob:OB_DEF, miei:[], recenti:[], tema:"auto",
   mese:null, apertoDove:"lista", finestra:null,
   drive:{on:false,id:null,ultimo:null,rev:null}, driveStato:"",
   passi:0, apertoPassi:0, daContapassi:null, pal:{},
-  cerchio:false, scrivo:null,
+  cerchio:false, scrivo:null, grezzo:null, primaEra:null,
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
   aperto:null, apertoVoci:[], export:"", importa:"", msg:null, spia:"", focus:null
@@ -964,12 +969,25 @@ function render(){
     });
   h+='</nav>';
 
+  /* Sostituire la pagina distrugge la casella che ha in mano, e il browser lo
+     racconta come un "hai tolto il dito": senza questa bandiera l'uscita
+     cancellava quello che stava scrivendo e la cifra dopo finiva nel vuoto —
+     si batteva "50" e restava "5". Trovato provando. */
+  ridisegno=true;
   document.getElementById("app").innerHTML=h;
   aggiornaSpia();
   if(S.focus){
     var e=document.querySelector('[data-in="'+S.focus+'"]');
-    if(e){ e.focus(); try{var n=e.value.length;e.setSelectionRange(n,n);}catch(x){} }
+    if(e){
+      /* il testo che sta scrivendo vince sul numero già interpretato: se no
+         una cancellazione diventa "0" e uno zero davanti non si toglie più */
+      if(S.grezzo!==null&&(S.focus==="grammi"||S.focus==="passi")) e.value=S.grezzo;
+      focoDaRender=true;
+      e.focus(); try{var n=e.value.length;e.setSelectionRange(n,n);}catch(x){}
+      focoDaRender=false;
+    }
   }
+  ridisegno=false;
 }
 
 /* I due anelli. Fuori le calorie, dentro le proteine.
@@ -1258,7 +1276,7 @@ function vistaOggi(){
      schermo. La sottolineatura dice che si tocca. */
   var camm=passato
     ? (pa>0?num(pa)+" passi":"nessun passo segnato")
-    : '<input class="br-in" data-in="passi" type="number" inputmode="numeric" value="'+
+    : '<input class="br-in" data-in="passi" type="text" inputmode="numeric" enterkeyhint="done" value="'+
       (S.passi||"")+'" placeholder="0"><span class="br-u"> passi</span>';
   h+='<section class="coppia">'+
      cartaBruciate("Camminata",kcalPassi(pa),camm)+
@@ -1347,7 +1365,7 @@ function vistaAggiungi(){
        '<div class="base">per 100 g: '+num(a.kcal)+' kcal · P '+num(a.p,1)+' · C '+num(a.c,1)+' · G '+num(a.g,1)+'</div>'+
        '<span class="etichetta sopra">Quantità</span><div class="qta">'+
        '<button class="passo" data-az="passo" data-v="-10">−10</button>'+
-       '<input class="campo-qta" data-in="grammi" type="number" inputmode="numeric" value="'+S.grammi+'">'+
+       '<input class="campo-qta" data-in="grammi" type="text" inputmode="numeric" enterkeyhint="done" value="'+S.grammi+'">'+
        '<span class="u">g</span><button class="passo" data-az="passo" data-v="10">+10</button></div><div class="chips">';
     [a.porz||100,30,50,100,150,200,250].filter(function(v,i,ar){return ar.indexOf(v)===i;})
       .forEach(function(v){h+='<button class="chip'+(S.grammi===v?" on":"")+'" data-az="qta" data-v="'+v+'">'+v+' g</button>';});
@@ -1392,7 +1410,7 @@ function vistaAggiungi(){
     if(S.ric.length===0) h+='<div class="nota">Cerca gli ingredienti qui sotto e aggiungili. Alla fine registri il piatto intero, oppure lo salvi come alimento tuo per ritrovarlo in un tocco.</div>';
     S.ric.forEach(function(r,i){
       h+='<div class="ing"><span class="ing-n">'+esc(r.nome)+'</span>'+
-         '<input class="ing-g" data-in="ric'+i+'" type="number" inputmode="numeric" value="'+r.gr+'"><span class="u">g</span>'+
+         '<input class="ing-g" data-in="ric'+i+'" type="text" inputmode="numeric" value="'+r.gr+'"><span class="u">g</span>'+
          '<button class="v-togli" data-az="ric-togli" data-i="'+i+'">togli</button></div>';
     });
     if(S.ric.length){
@@ -1929,9 +1947,58 @@ document.getElementById("app").addEventListener("change",function(ev){
   lettore.readAsText(f);
 });
 
+/* ---------- le caselle dei numeri ----------
+   Chiesto il 2026-09-04: "quando scrivo la cifra a mano accadono cose molto
+   strane". Succedevano due cose, tutte e due colpa mia.
+
+   La prima: la casella arriva **già piena** (100 g, o i passi di prima). Per
+   scriverci 50 bisognava cancellare quello che c'era, col cursore che finiva
+   in mezzo alle cifre vecchie e numeri come 10050. Adesso **toccandola si
+   svuota**, e quello che batti è l'unica cosa che c'è dentro.
+
+   La seconda, la peggiore: a ogni tasto premuto la pagina si ridisegnava tutta
+   — serve, perché sopra cambiano le calorie — e la casella veniva ricostruita
+   col numero **già interpretato**. Cancellando tutto ricompariva uno "0", uno
+   zero davanti restava lì, e il cursore tornava in fondo a ogni cifra. Adesso,
+   finché la casella è quella che hai in mano, dentro resta **esattamente il
+   testo che hai scritto** (`S.grezzo`); il resto della pagina si aggiorna lo
+   stesso.
+
+   Se la lasci vuota e tocchi altrove, torna il numero di prima (`S.primaEra`):
+   una casella svuotata per sbaglio non deve diventare zero. */
+/* Ridisegnando, la casella viene ricostruita e le rimettiamo dentro il fuoco:
+   quel `focus()` fa scattare di nuovo questo ascolto, che svuoterebbe la
+   casella a ogni cifra battuta — trovato provando, si scriveva "50" e restava
+   "5". Qui distinguiamo il dito dell'utente dal fuoco rimesso dal codice. */
+document.getElementById("app").addEventListener("focusin",function(ev){
+  var e=ev.target, k=e.getAttribute&&e.getAttribute("data-in");
+  if(k!=="grammi"&&k!=="passi") return;
+  if(focoDaRender) return;
+  if(S.focus===k&&S.grezzo!==null) return;   /* la sta già scrivendo lui */
+  S.focus=k; S.primaEra=e.value; S.grezzo="";
+  e.value="";
+});
+document.getElementById("app").addEventListener("focusout",function(ev){
+  var e=ev.target, k=e.getAttribute&&e.getAttribute("data-in");
+  if(k!=="grammi"&&k!=="passi") return;
+  if(ridisegno) return;   /* non è lui che ha tolto il dito: è la pagina che si rifà */
+  var vuota=(e.value==="");
+  S.grezzo=null; S.focus=null;
+  if(!vuota) return;
+  /* svuotata e lasciata così: rimetto com'era */
+  e.value=S.primaEra;
+  if(k==="grammi"){ S.grammi=Math.max(0,Number(S.primaEra)||0); render(); }
+  else { S.passi=Math.max(0,Math.round(Number(S.primaEra)||0)); salva(); render(); }
+});
 document.getElementById("app").addEventListener("input",function(ev){
   var e=ev.target, k=e.getAttribute("data-in"); if(!k) return;
   S.focus=k;
+  if(k==="grammi"||k==="passi"||k.indexOf("ric")===0){
+    /* casella di testo: ci si può scrivere di tutto, e le cifre sole bastano */
+    var pulito=e.value.replace(/[^0-9]/g,"");
+    if(pulito!==e.value) e.value=pulito;
+    if(k==="grammi"||k==="passi") S.grezzo=pulito;
+  }
   if(k==="cerca"){ S.cerca=e.value; render(); }
   else if(k==="grammi"){ S.grammi=Math.max(0,Number(e.value)); render(); }
   else if(k==="passi"){ S.passi=Math.max(0,Math.round(Number(e.value)||0)); salva(); render(); }
