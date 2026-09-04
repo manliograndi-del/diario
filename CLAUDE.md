@@ -292,6 +292,13 @@ Non ribaltarle senza dirglielo esplicitamente.
   valore rovinato per far comparire "questo browser non permette il
   salvataggio", falso e allarmante proprio mentre l'app si stava rimettendo in
   piedi da sola.
+- **Gli "Ultimi usati" si mostrano in ordine alfabetico** (chiesto il
+  2026-09-04). **L'ordine dentro `S.recenti` resta cronologico**, perché è
+  quello a decidere chi esce quando la lista arriva a quattordici: si ordina
+  solo la copia che si disegna, portandosi dietro la posizione vera, che è
+  quella che il tocco usa per sapere quale alimento hai scelto. Con
+  `localeCompare(…, "it")`, se no "Zucca" verrebbe prima di "àcciuga" e le
+  maiuscole conterebbero.
 - **Le caselle dei numeri si svuotano quando le tocchi** (chiesto il
   2026-09-04: "quando scrivo la cifra a mano accadono cose molto strane").
   Tre difetti in fila, e vanno capiti insieme perché il primo da solo non
@@ -311,7 +318,9 @@ Non ribaltarle senza dirglielo esplicitamente.
      Dopo ogni ridisegno il cursore tornava a inizio casella: si batteva "50" e
      restava "05". Ora sono `type="text" inputmode="numeric"`, la tastiera è
      sempre quella dei numeri, e le cifre si filtrano in ingresso.
-     **Non rimetterle `type="number"`**, o torna tutto.
+     **Non rimetterle `type="number"`**, o torna tutto. La tastiera resta
+     quella dei numeri grazie a `inputmode="numeric"`, con `pattern="[0-9]*"`
+     accanto perché su qualche telefono è quello a decidere.
   Due bandiere tengono separato il dito dell'utente dai movimenti del fuoco che
   facciamo noi: `focoDaRender` (il `focus()` che rimettiamo dopo il ridisegno,
   che se no farebbe scattare lo svuotamento a ogni cifra) e `ridisegno`

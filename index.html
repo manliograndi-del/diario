@@ -1276,7 +1276,7 @@ function vistaOggi(){
      schermo. La sottolineatura dice che si tocca. */
   var camm=passato
     ? (pa>0?num(pa)+" passi":"nessun passo segnato")
-    : '<input class="br-in" data-in="passi" type="text" inputmode="numeric" enterkeyhint="done" value="'+
+    : '<input class="br-in" data-in="passi" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" value="'+
       (S.passi||"")+'" placeholder="0"><span class="br-u"> passi</span>';
   h+='<section class="coppia">'+
      cartaBruciate("Camminata",kcalPassi(pa),camm)+
@@ -1365,7 +1365,7 @@ function vistaAggiungi(){
        '<div class="base">per 100 g: '+num(a.kcal)+' kcal · P '+num(a.p,1)+' · C '+num(a.c,1)+' · G '+num(a.g,1)+'</div>'+
        '<span class="etichetta sopra">Quantità</span><div class="qta">'+
        '<button class="passo" data-az="passo" data-v="-10">−10</button>'+
-       '<input class="campo-qta" data-in="grammi" type="text" inputmode="numeric" enterkeyhint="done" value="'+S.grammi+'">'+
+       '<input class="campo-qta" data-in="grammi" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" value="'+S.grammi+'">'+
        '<span class="u">g</span><button class="passo" data-az="passo" data-v="10">+10</button></div><div class="chips">';
     [a.porz||100,30,50,100,150,200,250].filter(function(v,i,ar){return ar.indexOf(v)===i;})
       .forEach(function(v){h+='<button class="chip'+(S.grammi===v?" on":"")+'" data-az="qta" data-v="'+v+'">'+v+' g</button>';});
@@ -1389,7 +1389,17 @@ function vistaAggiungi(){
     h+='<input class="cerca" data-in="cerca" placeholder="Pollo, riso, yogurt greco…" value="'+esc(S.cerca)+'">';
     if(!S.cerca && S.recenti.length){
       h+='<section class="gruppo"><div class="g-testa"><h2 class="g-titolo">Ultimi usati</h2></div>';
-      S.recenti.forEach(function(r,i){
+      /* **In ordine alfabetico** (chiesto il 2026-09-04). L'ordine di dentro
+         resta quello di quando li hai usati — serve a decidere chi esce quando
+         la lista si riempie — ma per trovarne uno con l'occhio l'alfabeto batte
+         la cronologia: dopo qualche giorno "l'ultimo usato" non lo ricordi.
+         Ordiniamo una copia e ci portiamo dietro la posizione vera, perché il
+         tocco la usa per sapere quale alimento hai scelto.
+         `localeCompare` in italiano: senza, "Zucca" verrebbe prima di "àcciuga"
+         e le maiuscole conterebbero. */
+      S.recenti.map(function(r,i){ return {r:r,i:i}; })
+        .sort(function(a,b){ return a.r.nome.localeCompare(b.r.nome,"it",{sensitivity:"base"}); })
+        .forEach(function(x){ var r=x.r, i=x.i;
         h+='<button class="riga-al" data-az="scegli-rec" data-i="'+i+'"><span class="r-nome">'+esc(r.nome)+
            '</span><span class="r-kcal">'+num(r.kcal)+' kcal / 100 g</span></button>';
       });
@@ -1410,7 +1420,7 @@ function vistaAggiungi(){
     if(S.ric.length===0) h+='<div class="nota">Cerca gli ingredienti qui sotto e aggiungili. Alla fine registri il piatto intero, oppure lo salvi come alimento tuo per ritrovarlo in un tocco.</div>';
     S.ric.forEach(function(r,i){
       h+='<div class="ing"><span class="ing-n">'+esc(r.nome)+'</span>'+
-         '<input class="ing-g" data-in="ric'+i+'" type="text" inputmode="numeric" value="'+r.gr+'"><span class="u">g</span>'+
+         '<input class="ing-g" data-in="ric'+i+'" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="'+r.gr+'"><span class="u">g</span>'+
          '<button class="v-togli" data-az="ric-togli" data-i="'+i+'">togli</button></div>';
     });
     if(S.ric.length){
