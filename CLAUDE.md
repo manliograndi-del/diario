@@ -305,6 +305,20 @@ Non ribaltarle senza dirglielo esplicitamente.
   il doppio. Il conto vero — 60 ml di Aperol più 90 di prosecco più soda — dà
   85 kcal e 8,5 g di zuccheri per 100 ml, e la porzione è passata da 150 a 180
   ml, che è un bicchiere vero.
+  **Il 2026-09-05, secondo giro**: Manlio ha trovato sulla confezione dei
+  fagiolini surgelati 35 kcal contro le 18 dell'app, e aveva ragione lui. Il
+  guaio era **sistematico, non un caso**: la tabella mescolava due standard.
+  Il CREA conta i **soli carboidrati disponibili** e per le verdure dà numeri
+  molto più bassi dell'USDA, che è invece il metro con cui sono calcolate le
+  etichette che lui legge. Alcune verdure venivano da una parte, altre
+  dall'altra. Ora le verdure sono tutte sullo standard delle etichette:
+  fagiolini 18→31, finocchi 9→31, cipolla 26→40, radicchio 13→23, zucca 18→26,
+  melanzane 18→25, zucchine 11→17, carote 35→41, peperoni 22→27, sedano 20→14,
+  patate 85→77 (e i patate avevano anche 1 g di grassi, che le patate non
+  hanno).
+  **La regola da qui in avanti: l'app deve concordare con quello che c'è
+  scritto sulle confezioni**, perché è lì che lui controlla. Se un domani
+  qualcuno riporta le verdure ai valori CREA, lui se ne accorgerà di nuovo.
   **Attenzione a pasta e riso cotti**: lì le tabelle non vanno d'accordo fra
   loro (pasta cotta 137 per il CREA, 158 per l'USDA) perché dipende da quanta
   acqua assorbono, e la differenza è del 15%. Non è un errore da correggere: se
