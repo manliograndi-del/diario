@@ -292,6 +292,24 @@ Non ribaltarle senza dirglielo esplicitamente.
   valore rovinato per far comparire "questo browser non permette il
   salvataggio", falso e allarmante proprio mentre l'app si stava rimettendo in
   piedi da sola.
+- **I valori dell'archivio vengono dal CREA per gli alimenti italiani e
+  dall'USDA per gli altri**, e il 2026-09-05 sono stati ricontrollati tutti e
+  125 perché lui sta facendo la dieta sul serio. Il metodo, se serve rifarlo:
+  confronto di ogni riga con le tabelle di riferimento, più un controllo
+  aritmetico (`kcal` contro `proteine×4 + carboidrati×4 + grassi×9`) che scova
+  le righe incoerenti. **Quel controllo segnala i quattro alcolici e i gamberi
+  ed è giusto così**: nel vino, nella birra e nello spritz le calorie vengono
+  dall'alcol (7 kcal/g), che nei macro non c'è; nei gamberi c'è un residuo di
+  glicogeno. Non "correggerli" per far tornare i conti.
+  L'unico errore vero trovato: **lo Spritz diceva 130 kcal per 100 ml**, quasi
+  il doppio. Il conto vero — 60 ml di Aperol più 90 di prosecco più soda — dà
+  85 kcal e 8,5 g di zuccheri per 100 ml, e la porzione è passata da 150 a 180
+  ml, che è un bicchiere vero.
+  **Attenzione a pasta e riso cotti**: lì le tabelle non vanno d'accordo fra
+  loro (pasta cotta 137 per il CREA, 158 per l'USDA) perché dipende da quanta
+  acqua assorbono, e la differenza è del 15%. Non è un errore da correggere: se
+  lui vuole precisione, deve pesare pasta e riso **crudi**, e le voci crude ci
+  sono apposta.
 - **Gli "Ultimi usati" si mostrano in ordine alfabetico** (chiesto il
   2026-09-04). **L'ordine dentro `S.recenti` resta cronologico**, perché è
   quello a decidere chi esce quando la lista arriva a quattordici: si ordina
