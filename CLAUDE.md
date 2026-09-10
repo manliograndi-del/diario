@@ -514,6 +514,15 @@ Non ribaltarle senza dirglielo esplicitamente.
   In `sw.js` c'è una riga che fa **ignorare al service worker tutto ciò che non è del
   nostro indirizzo**: senza, una chiamata a Google andata storta si sarebbe presa in
   cambio la pagina dell'app, e il codice avrebbe letto HTML al posto della risposta.
+  **`GOOGLE_ACCOUNT` dice a Google quale account usare** (`hint`, su
+  `initTokenClient` e ripetuto su `requestAccessToken`), dal 2026-09-10: quel
+  giorno Manlio ha attivato un secondo account Google sul telefono, e da lì in
+  poi Google fermava ogni volta a chiedere quale usare invece di andare dritto.
+  L'account è sempre lo stesso, `manlio.grandi@gmail.com`: non c'è motivo di
+  chiederlo ogni volta, quindi ora non lo chiede più — se quell'account è
+  presente sul telefono, la scelta si salta. **Se un giorno cambia l'account
+  con cui salva su Drive**, questa costante va cambiata (qui e nella Palestra
+  insieme, sono due copie identiche dello stesso valore).
 - **Sincronizzazione a due sensi: ancora da fare.** Chiesta il 2026-08-18, rimandata,
   e il 2026-08-22 abbiamo scelto di partire dalla sola copia di sicurezza — l'80% di
   quello che gli serve senza il problema di decidere chi vince quando due dispositivi
