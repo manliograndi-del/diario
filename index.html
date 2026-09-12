@@ -1067,10 +1067,18 @@ function coloreGrassi(gr){
   else { var u=Math.min(1,r-1); c=[lerp(V[0],R[0],u),lerp(V[1],R[1],u),lerp(V[2],R[2],u)]; }
   return "rgb("+c[0]+","+c[1]+","+c[2]+")";
 }
-/* Il grasso stimato è un cerchio che si sgonfia: al massimo quando non hai
+/* Il cerchio del grasso è un disco che si sgonfia: al massimo quando non hai
    mangiato niente e hai risparmiato tutto il fabbisogno, sempre più piccolo
    man mano che mangi. Il tratteggio segna l'obiettivo, così si vede a colpo
-   d'occhio se il pieno lo supera o no. */
+   d'occhio se il pieno lo supera o no.
+   **La scritta sotto dice "grasso perso" o "grasso guadagnato"**, mai
+   "stimato" (chiesto il 2026-09-12): prima diceva sempre "grasso stimato"
+   finché non si superava il fabbisogno, ed era una coppia sbilanciata — un
+   lato diceva *quanto è certo* il numero, l'altro *da che parte va*. Lo
+   stesso riepilogo del mese usa già "Grasso perso" / "Grasso guadagnato": qui
+   ora è la stessa coppia, più piccola. Resta una stima — il conto è sempre
+   quello di `grammiGrasso()`, 7700 kcal a chilo — ma quello lo dice il resto
+   della pagina, non serve ripeterlo qui. */
 function cerchioGrassi(kcal){
   var gr=grammiPersi(kcal), su=grammiSopra(kcal), gmax=grammiMax(), gtar=grammiTarget();
   var D=118, c=D/2, Rmax=c-1;
@@ -1087,7 +1095,7 @@ function cerchioGrassi(kcal){
   } else if(r>0.6) v+='<circle cx="'+c+'" cy="'+c+'" r="'+r.toFixed(1)+'" fill="'+coloreGrassi(gr)+'" class="grasso-c"/>';
   if(su===0) v+='<circle cx="'+c+'" cy="'+c+'" r="'+rt.toFixed(1)+'" fill="none" style="stroke:var(--inchiostro)" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>';
   v+='</svg><div class="grasso-n'+(su>0?" rossa":"")+'">'+(su>0?"+"+num(su):num(gr))+'</div>'+
-     '<div class="col-cap">'+(su>0?"grasso guadagnato":"grasso stimato")+'</div></div>';
+     '<div class="col-cap">'+(su>0?"grasso guadagnato":"grasso perso")+'</div></div>';
   return v;
 }
 

@@ -144,6 +144,13 @@ Non ribaltarle senza dirglielo esplicitamente.
   Il gradiente **non è monotòno di proposito**: un gradiente che diventa sempre più
   verde man mano che mangi meno premierebbe il non mangiare. Se chiede di renderlo
   monotòno, fallo, ma ricordagli perché era così.
+  **La scritta sotto il disco dice "grasso perso" o "grasso guadagnato"**, mai
+  "stimato" (dal 2026-09-12): prima diceva sempre "grasso stimato" finché non
+  si superava il fabbisogno, una coppia sbilanciata — un lato descriveva
+  quanto è certo il numero, l'altro da che parte va. Il riepilogo del mese usa
+  già "Grasso perso" / "Grasso guadagnato": ora il disco del giorno usa la
+  stessa coppia. Resta comunque una stima — lo dice il resto della pagina, qui
+  non serve ripeterlo.
 - **I passi si scrivono a mano** (chiesto il 2026-08-27), **oppure arrivano dall'app
   "Diario passi"** (dal 2026-08-28, vedi più sotto). Nessuna pagina web può leggere Fit
   o Health Connect: le porte sono chiuse ai siti e quelle di Fit chiudono del tutto a
