@@ -1095,7 +1095,7 @@ function cerchioGrassi(kcal){
   } else if(r>0.6) v+='<circle cx="'+c+'" cy="'+c+'" r="'+r.toFixed(1)+'" fill="'+coloreGrassi(gr)+'" class="grasso-c"/>';
   if(su===0) v+='<circle cx="'+c+'" cy="'+c+'" r="'+rt.toFixed(1)+'" fill="none" style="stroke:var(--inchiostro)" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>';
   v+='</svg><div class="grasso-n'+(su>0?" rossa":"")+'">'+(su>0?"+"+num(su):num(gr))+'</div>'+
-     '<div class="col-cap">'+(su>0?"grasso guadagnato":"grasso perso")+'</div></div>';
+     '<div class="col-cap">'+(su>0?"grasso guadagnato":"grasso carambola")+'</div></div>';
   return v;
 }
 
