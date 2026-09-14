@@ -194,13 +194,17 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 .mese-grasso .cifra-g{margin-top:7px}
 
 /* storico */
-.grafico{display:flex;gap:4px;align-items:flex-end;height:140px;margin-top:14px;position:relative}
+.grafico{display:flex;gap:4px;align-items:flex-end;height:140px;margin-top:14px;position:relative;padding-right:26px}
 .col{flex:1;display:flex;flex-direction:column;height:100%;min-width:0}
 .col-c{flex:1;display:flex;align-items:flex-end}
 .col-b{width:100%;background:var(--blu);border-radius:1px 1px 0 0}
-.col-b.oltre{background:var(--rosso)}
 .col-e{font-family:var(--mono);font-size:8.5px;color:var(--tenue);text-align:center;padding-top:5px;white-space:nowrap;overflow:hidden}
-.obiettivo{position:absolute;left:0;right:0;height:0;border-top:1px dashed var(--senape);pointer-events:none}
+.obiettivo{position:absolute;left:0;right:26px;height:0;border-top:1px dashed var(--senape);pointer-events:none}
+.obiettivo.fabb{border-top-color:var(--tenue)}
+/* il numero sta nel margine a destra, fuori dalle barre: sopra una barra
+   dovrebbe portarsi dietro un fondo bianco, che gliene bucherebbe una */
+.obiettivo i{position:absolute;left:100%;bottom:-5px;padding-left:4px;font-family:var(--mono);
+  font-style:normal;font-size:8.5px;color:var(--tenue);line-height:1.1;white-space:nowrap}
 .giorno{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 2px;border-bottom:1px solid var(--linea);text-align:left}
 .gg-d{font-size:14.5px;font-weight:500}
 .gg-m{font-family:var(--mono);font-size:10.5px;color:var(--tenue);margin-top:3px}
@@ -1067,6 +1071,21 @@ function coloreGrassi(gr){
   else { var u=Math.min(1,r-1); c=[lerp(V[0],R[0],u),lerp(V[1],R[1],u),lerp(V[2],R[2],u)]; }
   return "rgb("+c[0]+","+c[1]+","+c[2]+")";
 }
+/* Il colore di una barra dello storico dice com'è andata la giornata senza
+   leggere il numero: verde fino all'obiettivo, rosso dal fabbisogno in su, e
+   fra i due la sfumatura (chiesto il 2026-09-14). La sfumatura si calcola,
+   quindi le terne stanno qui e non nelle variabili CSS — stessa ragione e
+   stessa forma di coloreGrassi(), compreso il tema scuro.
+   Se un giorno mette un fabbisogno più basso dell'obiettivo, la sfumatura non
+   avrebbe dove stare: lì la barra è verde sotto l'obiettivo e rossa sopra. */
+function coloreBarra(kcal){
+  var scuro=temaScuro();
+  var V=scuro?[78,154,114]:[46,107,79];
+  var R=scuro?[201,105,75]:[163,52,31];
+  var a=S.ob.kcal, b=S.ob.fab;
+  var u=b>a?Math.max(0,Math.min(1,(kcal-a)/(b-a))):(kcal>a?1:0);
+  return "rgb("+lerp(V[0],R[0],u)+","+lerp(V[1],R[1],u)+","+lerp(V[2],R[2],u)+")";
+}
 /* Il cerchio del grasso è un disco che si sgonfia: al massimo quando non hai
    mangiato niente e hai risparmiato tutto il fabbisogno, sempre più piccolo
    man mano che mangi. Il tratteggio segna l'obiettivo, così si vede a colpo
@@ -1642,7 +1661,11 @@ function vistaStorico(){
   var giorni=Object.keys(S.indice).sort().reverse();
   if(giorni.length===0) return '<div class="vuoto">Lo storico si riempie da solo: ogni giorno registrato resta qui.</div>';
   var h=pannelloMese()+pannelloMesi(), ultimi=giorni.slice(0,14).slice().reverse();
-  var max=Math.max.apply(null,[S.ob.kcal,1].concat(ultimi.map(function(d){return S.indice[d].kcal;})));
+  /* il fabbisogno entra nella scala anche quando nessun giorno ci arriva:
+     se no la sua linea tratteggiata cadrebbe sopra il bordo del grafico.
+     L'8% in più è aria sopra: senza, nei giorni tutti sotto il fabbisogno la
+     sua linea finirebbe esatta sul bordo e il numero uscirebbe dal riquadro */
+  var max=Math.max.apply(null,[S.ob.kcal,S.ob.fab,1].concat(ultimi.map(function(d){return S.indice[d].kcal;})))*1.08;
   var s7=giorni.slice(0,7);
   var m7={kcal:s7.reduce(function(a,d){return a+S.indice[d].kcal;},0)/s7.length,
           p:s7.reduce(function(a,d){return a+S.indice[d].p;},0)/s7.length,n:s7.length};
@@ -1656,10 +1679,12 @@ function vistaStorico(){
   h+='<section class="pannello"><div class="etichetta">Ultimi giorni</div><div class="grafico">';
   ultimi.forEach(function(d){
     var v=S.indice[d];
-    h+='<div class="col"><div class="col-c"><div class="col-b'+(v.kcal>S.ob.kcal?" oltre":"")+
-       '" style="height:'+((v.kcal/max)*100)+'%"></div></div><div class="col-e">'+dataBreve(d)+'</div></div>';
+    h+='<div class="col"><div class="col-c"><div class="col-b" style="height:'+((v.kcal/max)*100)+
+       '%;background:'+coloreBarra(v.kcal)+'"></div></div><div class="col-e">'+dataBreve(d)+'</div></div>';
   });
-  h+='<div class="obiettivo" style="bottom:'+(22+(S.ob.kcal/max)*118)+'px"></div></div></section>';
+  h+='<div class="obiettivo" style="bottom:'+(22+(S.ob.kcal/max)*118)+'px"><i>'+S.ob.kcal+'</i></div>'+
+     '<div class="obiettivo fabb" style="bottom:'+(22+(S.ob.fab/max)*118)+'px"><i>'+S.ob.fab+'</i></div>'+
+     '</div></section>';
 
   giorni.forEach(function(d){
     var v=S.indice[d];

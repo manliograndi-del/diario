@@ -430,6 +430,26 @@ Non ribaltarle senza dirglielo esplicitamente.
   E quando un mese è davvero vuoto ma ce ne sono altri, la scritta lo dice e
   indica la freccia, invece di lasciare intendere il peggio.
   **Non rimettere `S.mese||meseDiOggi()`.**
+- **Il grafico "Ultimi giorni" ha due linee tratteggiate e le barre sfumate**
+  (chiesto il 2026-09-14). Prima c'era **una** linea sola, all'obiettivo, e le
+  barre erano blu fino a lì e rosse oltre: uno scalino secco, che diceva "hai
+  sforato" e basta. Ora le linee sono due, l'obiettivo (`--senape`) e il
+  fabbisogno (`--tenue`), col loro numero scritto in un margine a destra, e la
+  barra va dal verde pieno sotto l'obiettivo al rosso pieno dal fabbisogno in
+  su, sfumando solo fra i due. Così un giorno a 1700 si legge come quello che
+  è — sopra l'obiettivo ma ancora ben dentro il fabbisogno — invece di essere
+  rosso quanto uno a 2600.
+  `coloreBarra()` è calcolata come `coloreGrassi()`, con le terne RGB scritte
+  dentro e `temaScuro()` letto lì: **una sfumatura non si può prendere da una
+  variabile CSS**, ed è l'unica eccezione consentita alla regola dei colori.
+  **La scala del grafico include sempre il fabbisogno, più l'8% di aria**: se
+  il massimo fosse solo il giorno più alto, in una settimana tutta sotto le
+  2200 la linea del fabbisogno cadrebbe sopra il bordo e il suo numero
+  uscirebbe dal riquadro. Provato con giorni tutti sotto 1500, tutti sotto il
+  fabbisogno, uno solo, e con giorni oltre le 2600.
+  **I numeri delle due linee stanno nel margine a destra, non sopra le barre**:
+  sopra una barra servirebbe un fondo pieno dietro la cifra, che gliela
+  bucherebbe. Per questo `.grafico` ha 26 px di `padding-right`.
 - **Lo Storico si apre sul mese** (chiesto il 2026-08-21). Calendario del mese con i
   giorni registrati toccabili e sotto i totali: grammi
   di grasso persi (o guadagnati) nel mese, giorni registrati, giorni sotto
