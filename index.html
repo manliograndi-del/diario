@@ -1076,10 +1076,14 @@ function coloreGrassi(gr){
   var scuro=temaScuro();
   var A=scuro?[217,164,65]:[192,132,17];
   var V=scuro?[78,154,114]:[46,107,79];
-  var R=scuro?[201,105,75]:[163,52,31];
-  var r=gr/grammiTarget(), c;
-  if(r<=1){ c=[lerp(A[0],V[0],r),lerp(A[1],V[1],r),lerp(A[2],V[2],r)]; }
-  else { var u=Math.min(1,r-1); c=[lerp(V[0],R[0],u),lerp(V[1],R[1],u),lerp(V[2],R[2],u)]; }
+  /* Dal 2026-09-14 il verde non si perde più andando oltre l'obiettivo:
+     più grasso hai tolto, più resta verde. Prima da lì in poi virava al
+     rosso, e le sue giornate migliori venivano rosse come quelle storte.
+     Il rosso in questo cerchio adesso vuol dire una cosa sola — grasso
+     messo su — e lo dipinge il ramo `su>0` di cerchioGrassi() con
+     var(--rosso). Per questo qui la terna del rosso non serve più. */
+  var r=Math.min(1,gr/grammiTarget());
+  var c=[lerp(A[0],V[0],r),lerp(A[1],V[1],r),lerp(A[2],V[2],r)];
   return "rgb("+c[0]+","+c[1]+","+c[2]+")";
 }
 /* Il colore di una barra dello storico dice com'è andata la giornata senza

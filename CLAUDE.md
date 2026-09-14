@@ -141,9 +141,22 @@ Non ribaltarle senza dirglielo esplicitamente.
   ne prendono i due lati. Il disco rosso cresce sulla scala dell'obiettivo: pieno
   quando hai messo su tanto quanto in una buona giornata ne avresti tolto. Lì il
   tratteggio dell'obiettivo sparisce, finirebbe sotto il disco.
-  Il gradiente **non è monotòno di proposito**: un gradiente che diventa sempre più
-  verde man mano che mangi meno premierebbe il non mangiare. Se chiede di renderlo
-  monotòno, fallo, ma ricordagli perché era così.
+  **Il gradiente è monotòno dal 2026-09-14, e prima non lo era.** Fino a quel
+  giorno, oltre l'obiettivo il colore virava al rosso, e la ragione era seria:
+  un gradiente sempre più verde man mano che mangi meno premia il non
+  mangiare. Manlio l'ha chiesto con una frase sola — "i colori positivi sono
+  verdi" — e ha ragione lui su una cosa che quella regola non vedeva: nel
+  **suo** cerchio il rosso finiva per dire due cose opposte, "hai tolto tanto
+  grasso" e "ne hai messo su", e la seconda è l'unica che meriti il rosso.
+  Le sue giornate migliori gli venivano rosse come quelle storte.
+  Ora `coloreGrassi()` va da ambra (0 g) a verde (l'obiettivo) e **da lì in su
+  resta verde**: `Math.min(1, gr/grammiTarget())`. Il rosso nel disco lo mette
+  solo il ramo `su>0` di `cerchioGrassi()`, cioè il grasso guadagnato.
+  **La vecchia obiezione però non è stata smentita, è stata solo scavalcata**:
+  oggi niente in questo cerchio scoraggia una giornata da 800 kcal. Se un
+  domani si accorge di tirare troppo, il posto dove rimetterlo non è il colore
+  — è un avviso sotto una certa soglia, che dice quello che intende senza
+  rendere rosso il merito.
   **La scritta sotto il disco dice "grasso perso" o "grasso guadagnato"**, mai
   "stimato" (dal 2026-09-12): prima diceva sempre "grasso stimato" finché non
   si superava il fabbisogno, una coppia sbilanciata — un lato descriveva
