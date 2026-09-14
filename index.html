@@ -194,12 +194,23 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
 .mese-grasso .cifra-g{margin-top:7px}
 
 /* storico */
-.grafico{display:flex;gap:4px;align-items:flex-end;height:140px;margin-top:14px;position:relative;padding-right:26px}
-.col{flex:1;display:flex;flex-direction:column;height:100%;min-width:0}
-.col-c{flex:1;display:flex;align-items:flex-end}
+/* Le barre stanno in una riga e le date in un'altra, e le linee tratteggiate
+   vivono dentro la riga delle barre: così la linea delle 1500 cade per forza
+   dove arriva una barra da 1500, senza che nessuno debba sapere quanto è alta
+   la striscia delle date.
+   Prima non era così, e il 2026-09-14 Manlio se n'è accorto guardando i suoi
+   giorni: le linee erano messe a mano con "22px di date e 118px di barre",
+   ma le date sono alte 15px, non 22. Le linee finivano tre pixel troppo in
+   alto e un giorno da 1520 kcal sembrava un giorno sotto l'obiettivo.
+   **Non rimettere misure fisse qui**: barre e linee devono leggere la stessa
+   altezza, ed è quella di .g-barre. */
+.grafico{margin-top:14px;padding-right:26px}
+.g-barre{display:flex;gap:4px;align-items:flex-end;height:118px;position:relative}
+.g-date{display:flex;gap:4px}
+.col{flex:1;min-width:0;display:flex;align-items:flex-end;height:100%}
 .col-b{width:100%;background:var(--blu);border-radius:1px 1px 0 0}
-.col-e{font-family:var(--mono);font-size:8.5px;color:var(--tenue);text-align:center;padding-top:5px;white-space:nowrap;overflow:hidden}
-.obiettivo{position:absolute;left:0;right:26px;height:0;border-top:1px dashed var(--senape);pointer-events:none}
+.col-e{flex:1;min-width:0;font-family:var(--mono);font-size:8.5px;color:var(--tenue);text-align:center;padding-top:5px;white-space:nowrap;overflow:hidden}
+.obiettivo{position:absolute;left:0;right:0;height:0;border-top:1px dashed var(--senape);pointer-events:none}
 .obiettivo.fabb{border-top-color:var(--tenue)}
 /* il numero sta nel margine a destra, fuori dalle barre: sopra una barra
    dovrebbe portarsi dietro un fondo bianco, che gliene bucherebbe una */
@@ -1076,15 +1087,26 @@ function coloreGrassi(gr){
    fra i due la sfumatura (chiesto il 2026-09-14). La sfumatura si calcola,
    quindi le terne stanno qui e non nelle variabili CSS — stessa ragione e
    stessa forma di coloreGrassi(), compreso il tema scuro.
+   **Passa per l'ambra a metà strada, e non è un vezzo.** La prima versione
+   andava dritta dal verde al rosso, e sulle prime centinaia di calorie il
+   colore non si muoveva: un giorno da 1600 era verde come uno da 1200, cioè
+   il grafico dava ragione a una giornata che l'obiettivo l'aveva superato.
+   Se l'è visto Manlio sui suoi giorni. Fra due colori lontani nella stessa
+   direzione l'occhio non legge il tratto iniziale; passando per l'ambra, che
+   è l'altro colore della tavolozza e lo stesso che usa coloreGrassi(), il
+   distacco dal verde comincia subito.
    Se un giorno mette un fabbisogno più basso dell'obiettivo, la sfumatura non
    avrebbe dove stare: lì la barra è verde sotto l'obiettivo e rossa sopra. */
 function coloreBarra(kcal){
   var scuro=temaScuro();
   var V=scuro?[78,154,114]:[46,107,79];
+  var A=scuro?[217,164,65]:[192,132,17];
   var R=scuro?[201,105,75]:[163,52,31];
   var a=S.ob.kcal, b=S.ob.fab;
   var u=b>a?Math.max(0,Math.min(1,(kcal-a)/(b-a))):(kcal>a?1:0);
-  return "rgb("+lerp(V[0],R[0],u)+","+lerp(V[1],R[1],u)+","+lerp(V[2],R[2],u)+")";
+  var c=u<=0.5?[lerp(V[0],A[0],u*2),lerp(V[1],A[1],u*2),lerp(V[2],A[2],u*2)]
+              :[lerp(A[0],R[0],(u-0.5)*2),lerp(A[1],R[1],(u-0.5)*2),lerp(A[2],R[2],(u-0.5)*2)];
+  return "rgb("+c[0]+","+c[1]+","+c[2]+")";
 }
 /* Il cerchio del grasso è un disco che si sgonfia: al massimo quando non hai
    mangiato niente e hai risparmiato tutto il fabbisogno, sempre più piccolo
@@ -1676,15 +1698,19 @@ function vistaStorico(){
        ?"Sotto l'obiettivo di "+num(S.ob.kcal-m7.kcal)+" kcal al giorno"
        :"Sopra l'obiettivo di "+num(m7.kcal-S.ob.kcal)+" kcal al giorno")+'</div></section>';
 
-  h+='<section class="pannello"><div class="etichetta">Ultimi giorni</div><div class="grafico">';
+  h+='<section class="pannello"><div class="etichetta">Ultimi giorni</div><div class="grafico"><div class="g-barre">';
   ultimi.forEach(function(d){
     var v=S.indice[d];
-    h+='<div class="col"><div class="col-c"><div class="col-b" style="height:'+((v.kcal/max)*100)+
-       '%;background:'+coloreBarra(v.kcal)+'"></div></div><div class="col-e">'+dataBreve(d)+'</div></div>';
+    h+='<div class="col"><div class="col-b" style="height:'+((v.kcal/max)*100)+
+       '%;background:'+coloreBarra(v.kcal)+'"></div></div>';
   });
-  h+='<div class="obiettivo" style="bottom:'+(22+(S.ob.kcal/max)*118)+'px"><i>'+S.ob.kcal+'</i></div>'+
-     '<div class="obiettivo fabb" style="bottom:'+(22+(S.ob.fab/max)*118)+'px"><i>'+S.ob.fab+'</i></div>'+
-     '</div></section>';
+  /* la stessa percentuale che dà l'altezza delle barre, così non possono
+     scollarsi: niente pixel contati a mano */
+  h+='<div class="obiettivo" style="bottom:'+((S.ob.kcal/max)*100)+'%"><i>'+S.ob.kcal+'</i></div>'+
+     '<div class="obiettivo fabb" style="bottom:'+((S.ob.fab/max)*100)+'%"><i>'+S.ob.fab+'</i></div></div>'+
+     '<div class="g-date">';
+  ultimi.forEach(function(d){ h+='<div class="col-e">'+dataBreve(d)+'</div>'; });
+  h+='</div></div></section>';
 
   giorni.forEach(function(d){
     var v=S.indice[d];

@@ -450,6 +450,26 @@ Non ribaltarle senza dirglielo esplicitamente.
   **I numeri delle due linee stanno nel margine a destra, non sopra le barre**:
   sopra una barra servirebbe un fondo pieno dietro la cifra, che gliela
   bucherebbe. Per questo `.grafico` ha 26 px di `padding-right`.
+  **Le linee tratteggiate stavano nel posto sbagliato, e ci sono state per
+  mesi** (trovato il 2026-09-14). Erano piazzate a mano con "22 px di date più
+  118 px di barre", ma la striscia delle date è alta 15 px, non 22: le linee
+  finivano qualche pixel troppo in alto e **un giorno appena sopra le 1500
+  aveva la cima della barra sotto la linea delle 1500**, cioè sembrava un
+  giorno riuscito. L'errore cresceva o calava con la scala, quindi non era
+  nemmeno costante. Se n'è accorto Manlio guardando i suoi giorni veri, non
+  una prova: le mie immagini di controllo lo contenevano e non l'avevo visto.
+  Ora le barre stanno in `.g-barre` e le date in `.g-date`, le linee vivono
+  dentro `.g-barre` e sono posizionate con **la stessa percentuale che dà
+  l'altezza delle barre**. **Non rimettere misure in pixel qui**: finché barre
+  e linee leggono la stessa altezza non possono più scollarsi.
+  **La sfumatura passa per l'ambra a metà strada.** La prima versione andava
+  dritta dal verde al rosso e sulle prime centinaia di calorie non si muoveva:
+  un giorno da 1600 restava verde come uno da 1200. Due colori lontani nella
+  stessa direzione non si distinguono nel tratto iniziale; l'ambra — che è già
+  nella tavolozza e la usa `coloreGrassi()` — fa cominciare il distacco
+  subito. Il punto di tutto il disegno è che **superare l'obiettivo si deve
+  vedere**, anche di poco: un grafico che assolve non serve a chi sta facendo
+  la dieta sul serio.
 - **Lo Storico si apre sul mese** (chiesto il 2026-08-21). Calendario del mese con i
   giorni registrati toccabili e sotto i totali: grammi
   di grasso persi (o guadagnati) nel mese, giorni registrati, giorni sotto
