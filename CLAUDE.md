@@ -583,6 +583,27 @@ Non ribaltarle senza dirglielo esplicitamente.
   presente sul telefono, la scelta si salta. **Se un giorno cambia l'account
   con cui salva su Drive**, questa costante va cambiata (qui e nella Palestra
   insieme, sono due copie identiche dello stesso valore).
+- **Un messaggio non deve mai mandare a un pulsante che in quel momento non
+  c'è** (2026-09-16). Il riquadro di Drive cambia pulsanti a seconda che si sia
+  collegati o no: da scollegati c'è "Collega Google Drive", da collegati ci
+  sono "Copia adesso", "Riprendi il diario da Drive" e "Scollega". L'errore del
+  permesso diceva *Tocca "Collega Google Drive"* anche da collegati, cioè
+  mandava a cercare un pulsante che lì non esisteva — Manlio ci è finito
+  davanti sul computer. Ora quell'errore si porta dietro il suo pulsante
+  ("Dai di nuovo il permesso a Google"), e i due messaggi che rimandano a
+  "Riprendi" compaiono solo da collegati.
+  Il modo di ricontrollarlo, se si aggiunge un messaggio: mettere l'app in
+  ognuno dei nove `driveStato`, collegata e scollegata, e verificare che ogni
+  nome fra virgolette corrisponda a un pulsante presente in quel riquadro.
+- **`driveRiprendi()` non ritentava con un permesso scaduto** (2026-09-16).
+  `driveSalva()` lo faceva già — azzera `GTOK` e richiede — ma "Riprendi" no:
+  un permesso vecchio rimasto in memoria lo faceva fallire senza nemmeno
+  provare a chiederlo di nuovo. Ora i due si comportano allo stesso modo.
+  **Il permesso di Google si chiede dopo aver caricato la sua libreria, e la
+  libreria si carica al primo tocco**: sul computer questo può costare la
+  finestra di Google, che Chrome blocca quando non la collega più al tocco.
+  Non è stato possibile provarlo qui (serve il suo account), quindi resta un
+  sospetto, non una diagnosi: se succede ancora sul computer, guardare lì.
 - **Sincronizzazione a due sensi: ancora da fare.** Chiesta il 2026-08-18, rimandata,
   e il 2026-08-22 abbiamo scelto di partire dalla sola copia di sicurezza — l'80% di
   quello che gli serve senza il problema di decidere chi vince quando due dispositivi

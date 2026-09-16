@@ -1782,10 +1782,22 @@ function vistaImpostazioni(){
   if(S.driveStato==="fatto")    h+='<div class="nota">Copia salvata su Drive.</div>';
   if(S.driveStato==="rete")     h+='<div class="nota">Nessuna rete: riprovo da solo la prossima volta.</div>';
   if(S.driveStato==="vuoto")    h+='<div class="errore">Su Drive non c\'è ancora nessuna copia.</div>';
-  if(S.driveStato==="riprendi") h+='<div class="errore">Su Drive c\'è una copia, ma <strong>qui il diario è vuoto</strong>: non l\'ho sovrascritta. Tocca "Riprendi il diario da Drive".</div>';
+  /* Questi due mandano a "Riprendi il diario da Drive", che c'è solo da
+     collegati: oggi ci si arriva sempre da collegati, ma legarli a drive.on
+     toglie di mezzo la possibilità di un'altra istruzione impossibile. */
+  if(S.driveStato==="riprendi"&&S.drive.on) h+='<div class="errore">Su Drive c\'è una copia, ma <strong>qui il diario è vuoto</strong>: non l\'ho sovrascritta. Tocca "Riprendi il diario da Drive".</div>';
   if(S.driveStato==="quivuoto") h+='<div class="nota">Collegato. Il diario è ancora vuoto: la prima copia partirà appena registri qualcosa.</div>';
-  if(S.driveStato==="altrove")  h+='<div class="errore">Su Drive c\'è una copia <strong>più nuova di questa</strong>, fatta da un altro dispositivo. Non l\'ho toccata. Se quella giusta è là, tocca "Riprendi il diario da Drive"; se la più giusta è questa, scollega e ricollega.</div>';
-  if(S.driveStato==="permesso") h+='<div class="errore">Permesso non dato o scaduto. Tocca "Collega Google Drive" e conferma.</div>';
+  if(S.driveStato==="altrove"&&S.drive.on)  h+='<div class="errore">Su Drive c\'è una copia <strong>più nuova di questa</strong>, fatta da un altro dispositivo. Non l\'ho toccata. Se quella giusta è là, tocca "Riprendi il diario da Drive"; se la più giusta è questa, scollega e ricollega.</div>';
+  if(S.driveStato==="permesso"){
+    /* Il messaggio diceva 'Tocca "Collega Google Drive"', ma quel pulsante
+       esiste solo da scollegati: da collegati ci sono Copia adesso, Riprendi
+       e Scollega, e basta. Manlio si è trovato davanti a un'istruzione
+       impossibile da eseguire (2026-09-16). Ora il pulsante glielo mettiamo
+       qui, e il messaggio dice per prima cosa la cosa che conta: i giorni
+       che ha davanti non c'entrano niente con questo errore. */
+    h+='<div class="errore">Google non ha dato il permesso, o è scaduto. <strong>I giorni registrati qui non si toccano</strong>: manca solo il collegamento con Drive.</div>';
+    if(S.drive.on) h+='<button class="b2" data-az="drive-collega">Dai di nuovo il permesso a Google</button>';
+  }
   if(S.driveStato==="errore")   h+='<div class="errore">Google ha risposto male. Riprova fra un momento.</div>';
   h+='</section>';
 
@@ -2284,16 +2296,27 @@ function driveSalva(interattivo){
    dentro i dati, già collaudato. */
 function driveRiprendi(){
   S.driveStato="corso"; render();
-  permessoDrive(!GTOK).then(function(tok){
-    var p=S.drive.id?Promise.resolve(S.drive.id):driveCerca(tok);
-    return p.then(function(id){
-      if(!id) throw erroreDrive("vuoto");
-      S.drive.id=id;
-      return driveQuandoTocca(tok,id).then(function(rev){
-        S.drive.rev=rev||null; S.drive.on=true; salvaCfg();
-        return driveLeggi(tok,id);
+  var riprovato=false;
+  /* Un permesso scaduto è la cosa più normale del mondo, e driveSalva() lo
+     sapeva già: si azzera e si richiede. Qui quel ritentativo mancava, così
+     un permesso vecchio in memoria faceva fallire "Riprendi" senza nemmeno
+     provare a chiederlo di nuovo (trovato il 2026-09-16). */
+  function giro(){
+    return permessoDrive(!GTOK).then(function(tok){
+      var p=S.drive.id?Promise.resolve(S.drive.id):driveCerca(tok);
+      return p.then(function(id){
+        if(!id) throw erroreDrive("vuoto");
+        S.drive.id=id;
+        return driveQuandoTocca(tok,id).then(function(rev){
+          S.drive.rev=rev||null; S.drive.on=true; salvaCfg();
+          return driveLeggi(tok,id);
+        });
       });
     });
+  }
+  giro().catch(function(e){
+    if(e.tipo==="scaduto"&&!riprovato){ riprovato=true; GTOK=null; return giro(); }
+    throw e;
   }).then(function(testo){
     S.driveStato=""; S.importa=testo; ripristina();
   }).catch(function(e){
