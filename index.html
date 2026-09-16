@@ -1788,6 +1788,14 @@ function vistaImpostazioni(){
   if(S.driveStato==="riprendi"&&S.drive.on) h+='<div class="errore">Su Drive c\'è una copia, ma <strong>qui il diario è vuoto</strong>: non l\'ho sovrascritta. Tocca "Riprendi il diario da Drive".</div>';
   if(S.driveStato==="quivuoto") h+='<div class="nota">Collegato. Il diario è ancora vuoto: la prima copia partirà appena registri qualcosa.</div>';
   if(S.driveStato==="altrove"&&S.drive.on)  h+='<div class="errore">Su Drive c\'è una copia <strong>più nuova di questa</strong>, fatta da un altro dispositivo. Non l\'ho toccata. Se quella giusta è là, tocca "Riprendi il diario da Drive"; se la più giusta è questa, scollega e ricollega.</div>';
+  /* Non è un errore: è l'app che si rifiuta di rovinare la copia buona.
+     Perciò si racconta in grigio, e dice i due numeri — sono quelli che
+     gli fanno capire da che parte stanno i giorni giusti. */
+  if(S.driveStato==="indietro"&&S.drive.on){
+    h+='<div class="nota"><strong>Questa copia è indietro.</strong> Su Drive ci sono '+S.driveGiorni.la+' giorni, qui ce ne sono '+S.driveGiorni.qui+
+       ': non ho scritto niente, per non cancellare quelli di là. Se i giorni giusti sono quelli su Drive, tocca "Riprendi il diario da Drive". '+
+       'Se invece sono questi, tocca "Scollega" e poi ricollega.</div>';
+  }
   if(S.driveStato==="fermo"){
     h+='<div class="nota">La copia automatica su Drive <strong>è ferma</strong>: Google vuole che tu dia di nuovo il permesso. I giorni registrati qui non c\'entrano e restano dove sono.</div>';
     if(S.drive.on) h+='<button class="b2" data-az="drive-collega">Dai di nuovo il permesso a Google</button>';
@@ -2250,6 +2258,12 @@ function driveLeggi(tok,id){
   return chiamaDrive(tok,"https://www.googleapis.com/drive/v3/files/"+id+"?alt=media").then(function(r){ return r.text(); });
 }
 
+/* Quanti giorni ci sono dentro una copia. null se non si riesce a leggerla:
+   chi chiama deve distinguere "di là ce n'è meno" da "non lo so". */
+function quantiGiorni(testo){
+  try{ var d=JSON.parse(testo); if(!d||!d.giorni) return null;
+       return Object.keys(d.giorni).length; }catch(e){ return null; }
+}
 /* Un diario vuoto non è una copia: è la mancanza di una copia. */
 function diarioVuoto(){ return Object.keys(S.indice).length===0&&S.voci.length===0; }
 
@@ -2282,7 +2296,24 @@ function driveSalva(interattivo){
            una volta sola e da lì in poi il segnaposto c'è. */
         return driveQuandoTocca(tok,id).then(function(rev){
           if(S.drive.rev&&rev&&rev!==S.drive.rev) return {fermo:true, id:id, altrove:true};
-          return driveScrivi(tok,id,JSON.stringify(raccogli()));
+          /* **Terza guardia: non scrivere una copia più povera di quella che
+             c'è già.** Il controllo di `rev` chiede *chi* ha toccato il file
+             per ultimo, e non basta: un dispositivo rimasto indietro che ha
+             letto il file e tiene il `rev` giusto può sovrascriverlo con meno
+             giorni, in silenzio, e i giorni di là non tornano più.
+             Non è teoria: il 2026-09-17 il computer aveva agosto e basta,
+             collegato allo stesso Drive del telefono che aveva tutto.
+             Qui i giorni non si cancellano mai, quindi il numero di giorni di
+             un dispositivo può solo crescere: se di là ce ne sono di più, è
+             questa copia a essere vecchia, e ci si ferma.
+             Se il file di là è illeggibile `quantiGiorni` dà null e non si
+             blocca niente: una copia rotta non deve impedire di farne una
+             buona. */
+          return driveLeggi(tok,id).then(function(testo){
+            var la=quantiGiorni(testo), qui=Object.keys(S.indice).length;
+            if(la!==null&&la>qui) return {fermo:true, id:id, indietro:true, la:la, qui:qui};
+            return driveScrivi(tok,id,JSON.stringify(raccogli()));
+          });
         });
       });
     });
@@ -2293,7 +2324,10 @@ function driveSalva(interattivo){
     throw e;
   }).then(function(r){
     S.drive.on=true; S.drive.id=r.id||S.drive.id;
-    if(r.fermo){ S.driveStato=r.altrove?"altrove":(r.id?"riprendi":"quivuoto"); }
+    if(r.fermo){
+      if(r.indietro){ S.driveGiorni={la:r.la,qui:r.qui}; S.driveStato="indietro"; }
+      else S.driveStato=r.altrove?"altrove":(r.id?"riprendi":"quivuoto");
+    }
     else { S.drive.rev=r.rev||null; S.drive.ultimo=Date.now(); S.driveStato="fatto"; }
     salvaCfg(); if(S.vista==="impostazioni") render();
   }).catch(function(e){

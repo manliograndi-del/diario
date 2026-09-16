@@ -551,6 +551,22 @@ Non ribaltarle senza dirglielo esplicitamente.
   blocco il vuoto di qui cancellerebbe la copia buona di là, e non resterebbe nessun
   posto da cui riprenderla. In quel caso ci si collega e gli si dice di premere
   "Riprendi". Provato apposta.
+  La terza, dal 2026-09-17: **non si scrive su Drive una copia più povera di
+  quella che c'è già.** Il controllo di `rev` qui sotto chiede *chi* ha toccato
+  il file per ultimo, e non basta: un dispositivo rimasto indietro che ha letto
+  il file, e quindi ha il `rev` giusto, poteva sovrascriverlo con meno giorni,
+  in silenzio. Non è teoria — il 2026-09-17 il computer aveva agosto e basta ed
+  era collegato allo stesso Drive del telefono, che aveva tutto: bastava che il
+  computer riuscisse a fare una copia e settembre spariva da Drive.
+  Siccome qui **i giorni non si cancellano mai**, il numero di giorni di un
+  dispositivo può soltanto crescere: se di là ce ne sono di più, è questa copia
+  a essere vecchia. Prima di scrivere si legge il file e si contano i giorni;
+  se di là sono di più ci si ferma e si dicono i due numeri, che sono quello
+  che gli fa capire da che parte stanno i giorni buoni. Se il file di là è
+  illeggibile, `quantiGiorni()` dà `null` e non si blocca niente: una copia
+  rotta non deve impedire di farne una buona.
+  **Questa non è una schermata d'errore**: è l'app che si rifiuta di rovinare
+  la copia, quindi si racconta in grigio e non in rosso.
   La seconda: **non si sovrascrive una copia toccata da qualcun altro.** Prima di
   scrivere si chiede a Drive quando è stato modificato il file e lo si confronta con
   `S.drive.rev`, il segnaposto lasciato dalla nostra ultima scrittura o lettura. Se non
@@ -626,6 +642,16 @@ Non ribaltarle senza dirglielo esplicitamente.
   finestra di Google, che Chrome blocca quando non la collega più al tocco.
   Non è stato possibile provarlo qui (serve il suo account), quindi resta un
   sospetto, non una diagnosi: se succede ancora sul computer, guardare lì.
+- **Due dispositivi collegati allo stesso Drive non sono una sincronia**, e il
+  2026-09-17 si è visto cosa vuol dire: sul computer il Diario mostrava agosto
+  pieno e settembre vuoto, e sembrava che l'app avesse perso i dati. Non aveva
+  perso niente — il telefono aveva tutto — il computer era semplicemente
+  fermo a una copia vecchia. **Quando dice che manca qualcosa, la prima cosa da
+  stabilire è su quale dispositivo sta guardando**: la stessa app, sullo stesso
+  indirizzo, ha dati diversi su ogni dispositivo, e questo a lui non è ovvio.
+  Il consiglio pratico che gli è stato dato: il telefono è il posto dove si
+  registra, il computer quello dove si guarda; e sul computer conviene tenere
+  Drive scollegato, così non può nemmeno provare a scrivere.
 - **Sincronizzazione a due sensi: ancora da fare.** Chiesta il 2026-08-18, rimandata,
   e il 2026-08-22 abbiamo scelto di partire dalla sola copia di sicurezza — l'80% di
   quello che gli serve senza il problema di decidere chi vince quando due dispositivi
