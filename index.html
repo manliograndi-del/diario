@@ -1788,6 +1788,10 @@ function vistaImpostazioni(){
   if(S.driveStato==="riprendi"&&S.drive.on) h+='<div class="errore">Su Drive c\'è una copia, ma <strong>qui il diario è vuoto</strong>: non l\'ho sovrascritta. Tocca "Riprendi il diario da Drive".</div>';
   if(S.driveStato==="quivuoto") h+='<div class="nota">Collegato. Il diario è ancora vuoto: la prima copia partirà appena registri qualcosa.</div>';
   if(S.driveStato==="altrove"&&S.drive.on)  h+='<div class="errore">Su Drive c\'è una copia <strong>più nuova di questa</strong>, fatta da un altro dispositivo. Non l\'ho toccata. Se quella giusta è là, tocca "Riprendi il diario da Drive"; se la più giusta è questa, scollega e ricollega.</div>';
+  if(S.driveStato==="fermo"){
+    h+='<div class="nota">La copia automatica su Drive <strong>è ferma</strong>: Google vuole che tu dia di nuovo il permesso. I giorni registrati qui non c\'entrano e restano dove sono.</div>';
+    if(S.drive.on) h+='<button class="b2" data-az="drive-collega">Dai di nuovo il permesso a Google</button>';
+  }
   if(S.driveStato==="permesso"){
     /* Il messaggio diceva 'Tocca "Collega Google Drive"', ma quel pulsante
        esiste solo da scollegati: da collegati ci sono Copia adesso, Riprendi
@@ -1797,6 +1801,8 @@ function vistaImpostazioni(){
        che ha davanti non c'entrano niente con questo errore. */
     h+='<div class="errore">Google non ha dato il permesso, o è scaduto. <strong>I giorni registrati qui non si toccano</strong>: manca solo il collegamento con Drive.</div>';
     if(S.drive.on) h+='<button class="b2" data-az="drive-collega">Dai di nuovo il permesso a Google</button>';
+    /* il motivo vero, in piccolo: serve a me quando lui me lo racconta */
+    if(S.drivePerche) h+='<div class="nota">Google ha risposto: <strong>'+esc(S.drivePerche)+'</strong></div>';
   }
   if(S.driveStato==="errore")   h+='<div class="errore">Google ha risposto male. Riprova fra un momento.</div>';
   h+='</section>';
@@ -2170,7 +2176,7 @@ function caricaGsi(){
   });
   return gsi;
 }
-function erroreDrive(tipo,stato){ var e=new Error(tipo); e.tipo=tipo; e.stato=stato||0; return e; }
+function erroreDrive(tipo,stato,perche){ var e=new Error(tipo); e.tipo=tipo; e.stato=stato||0; e.perche=perche||""; return e; }
 
 /* chiede il permesso: "interattivo" apre la finestra di Google, altrimenti
    prova in silenzio e fallisce senza disturbare.
@@ -2193,7 +2199,12 @@ function permessoDrive(interattivo){
           if(r&&r.access_token){ GTOK=r.access_token; if(a) a.ok(GTOK); }
           else if(a) a.no(erroreDrive("permesso"));
         },
-        error_callback:function(){ var a=attesaTok; attesaTok=null; if(a) a.no(erroreDrive("permesso")); }
+        /* Google dice *perché* ha detto di no (finestra bloccata, finestra
+           chiusa, permesso negato…). Buttavamo via quel motivo e mostravamo
+           sempre la stessa frase, così ogni guasto diverso sembrava lo
+           stesso e non c'era niente da cui ripartire. */
+        error_callback:function(err){ var a=attesaTok; attesaTok=null;
+          if(a) a.no(erroreDrive("permesso",0,err&&(err.type||err.message)||"")); }
       });
     }
     return new Promise(function(ok,no){
@@ -2286,7 +2297,19 @@ function driveSalva(interattivo){
     else { S.drive.rev=r.rev||null; S.drive.ultimo=Date.now(); S.driveStato="fatto"; }
     salvaCfg(); if(S.vista==="impostazioni") render();
   }).catch(function(e){
-    S.driveStato=(e.tipo==="permesso"||e.tipo==="scaduto")?"permesso":(e.tipo==="rete"?"rete":"errore");
+    S.drivePerche=e.perche||"";
+    /* **La copia automatica parte da sola due secondi dopo l'apertura** e
+       chiede il permesso in silenzio, senza finestra. Sul computer quella
+       richiesta silenziosa non riesce quasi mai — il permesso vive solo in
+       memoria e muore a ogni ricaricamento — e il fallimento veniva dipinto
+       in rosso sopra la riga dei giorni registrati: sembrava che il diario
+       fosse rotto, e tornava a ogni apertura anche dopo che il permesso era
+       stato dato per davvero (Manlio, 2026-09-17).
+       Un tentativo che non ha chiesto lui si racconta piano. Rosso solo
+       quando ha toccato un pulsante e quel pulsante non ha funzionato. */
+    if(e.tipo==="rete") S.driveStato="rete";
+    else if(!interattivo) S.driveStato="fermo";
+    else S.driveStato=(e.tipo==="permesso"||e.tipo==="scaduto")?"permesso":"errore";
     if(S.vista==="impostazioni") render();
   });
 }
@@ -2320,6 +2343,7 @@ function driveRiprendi(){
   }).then(function(testo){
     S.driveStato=""; S.importa=testo; ripristina();
   }).catch(function(e){
+    S.drivePerche=e.perche||"";
     S.driveStato=e.tipo==="vuoto"?"vuoto":(e.tipo==="rete"?"rete":"permesso");
     render();
   });

@@ -595,6 +595,28 @@ Non ribaltarle senza dirglielo esplicitamente.
   Il modo di ricontrollarlo, se si aggiunge un messaggio: mettere l'app in
   ognuno dei nove `driveStato`, collegata e scollegata, e verificare che ogni
   nome fra virgolette corrisponda a un pulsante presente in quel riquadro.
+- **Un tentativo che non ha chiesto lui si racconta piano** (2026-09-17).
+  Due secondi dopo ogni apertura parte `driveSalva(false)`, che chiede il
+  permesso **in silenzio**, senza finestra. Sul computer quella richiesta
+  silenziosa quasi non riesce mai — il permesso vive solo in memoria (`GTOK`)
+  e muore a ogni ricaricamento — e il fallimento veniva dipinto in rosso
+  sopra la riga dei giorni registrati. Risultato: Manlio dava il permesso per
+  davvero, la finestra di Google si apriva, lui premeva Continue, e alla
+  riapertura successiva il rosso era di nuovo lì. Sembrava che il permesso
+  non funzionasse mai; in realtà non stava fallendo il suo, stava fallendo
+  quello automatico.
+  Ora il rosso compare **solo se ha toccato un pulsante**; il tentativo
+  automatico fallito dice in grigio che la copia è ferma e offre il pulsante.
+  **La regola, oltre a Drive:** un guasto di qualcosa che lui non ha chiesto
+  non merita un allarme. L'allarme dice "ho fatto quello che volevi e non è
+  andato", e se lo si spende per altro smette di significare qualcosa.
+- **Il motivo vero di Google adesso si vede** (2026-09-17). L'`error_callback`
+  riceve un tipo (`popup_failed_to_open`, `popup_closed`, permesso negato…)
+  che veniva buttato via: ogni guasto diverso mostrava la stessa frase e non
+  c'era niente da cui ripartire. Ora finisce in `S.drivePerche` e si legge in
+  piccolo sotto l'errore. **Serve a me quando lui me lo racconta**: lui non
+  legge il codice e non apre la console, quindi quella riga è l'unico ponte
+  fra quello che vede e quello che è successo.
 - **`driveRiprendi()` non ritentava con un permesso scaduto** (2026-09-16).
   `driveSalva()` lo faceva già — azzera `GTOK` e richiede — ma "Riprendi" no:
   un permesso vecchio rimasto in memoria lo faceva fallire senza nemmeno
