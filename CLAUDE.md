@@ -642,6 +642,20 @@ Non ribaltarle senza dirglielo esplicitamente.
   finestra di Google, che Chrome blocca quando non la collega più al tocco.
   Non è stato possibile provarlo qui (serve il suo account), quindi resta un
   sospetto, non una diagnosi: se succede ancora sul computer, guardare lì.
+- **Un guasto che non si vede dove lui guarda è un guasto che non esiste**
+  (2026-09-17). Il telefono non copiava su Drive **dal 2 settembre**: quindici
+  giorni senza copia. Non era rotto niente — il computer aveva toccato il file
+  su Drive e la regola del "non sovrascrivere la copia di un altro dispositivo"
+  faceva esattamente il suo mestiere — ma il Diario lo scriveva **soltanto nel
+  riquadro di Drive dentro le Impostazioni**, dove lui entra una volta al mese.
+  Nella schermata di oggi, niente. Lui l'ha scoperto per caso, mandandomi una
+  fotografia di quella schermata per un'altra ragione.
+  Ora, se la copia è ferma da **tre giorni o più**, l'avviso compare in cima a
+  qualunque schermata (`copiaFerma()`, la fascia `avviso` che c'era già). Tre
+  giorni perché sotto capita solo di non aver aperto l'app.
+  **La regola generale, e vale oltre Drive:** se una cosa che deve funzionare
+  da sola si inceppa, dirlo in un pannello di impostazioni non è dirlo. Lui
+  guarda la schermata di oggi, e basta.
 - **Due dispositivi collegati allo stesso Drive non sono una sincronia**, e il
   2026-09-17 si è visto cosa vuol dire: sul computer il Diario mostrava agosto
   pieno e settembre vuoto, e sembrava che l'app avesse perso i dati. Non aveva

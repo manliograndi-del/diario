@@ -498,6 +498,7 @@ function avvia(){
   S.voci=g.voci||[];
   S.passi=Number(g.passi)||0;
   if(!memOk) S.msg="Questo browser non permette il salvataggio. Esci dalla navigazione privata.";
+  if(!S.msg){ var gf=copiaFerma(); if(gf) S.msg="La copia su Drive \u00e8 ferma da "+gf+" giorni. Apri Impostazioni: l\u00ec c\u2019\u00e8 scritto perch\u00e9."; }
   chiediMemoriaStabile();
   render();
   aggiornaCerchio();
@@ -2263,6 +2264,23 @@ function driveLeggi(tok,id){
 function quantiGiorni(testo){
   try{ var d=JSON.parse(testo); if(!d||!d.giorni) return null;
        return Object.keys(d.giorni).length; }catch(e){ return null; }
+}
+/* **Una copia ferma da giorni non si racconta dentro le Impostazioni.**
+   Il 2026-09-17 il telefono non copiava su Drive dal 2 settembre: quindici
+   giorni. Non era un guasto — il computer aveva toccato il file su Drive, e
+   la regola del "non sovrascrivere la copia di un altro dispositivo" si era
+   messa di mezzo, facendo esattamente il suo mestiere. Il guaio è che il
+   Diario lo diceva soltanto in un riquadro delle Impostazioni, dove lui entra
+   una volta al mese, mentre nella schermata di oggi non compariva niente.
+   **Un guasto che non si vede dove lui guarda è un guasto che non esiste**, e
+   intanto passavano i giorni senza copia.
+   Tre giorni è la soglia: sotto, capita di non aprire l'app e non vuol dire
+   niente; sopra, qualcosa si è inceppato per davvero. */
+var GIORNI_COPIA_FERMA=3;
+function copiaFerma(){
+  if(!S.drive.on||!S.drive.ultimo) return 0;
+  var g=Math.floor((Date.now()-S.drive.ultimo)/86400000);
+  return g>=GIORNI_COPIA_FERMA?g:0;
 }
 /* Un diario vuoto non è una copia: è la mancanza di una copia. */
 function diarioVuoto(){ return Object.keys(S.indice).length===0&&S.voci.length===0; }
