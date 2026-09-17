@@ -394,6 +394,10 @@ var K_PAL="palestra.indice";
    posto diventa illeggibile non c'è niente da cui ricavarli. Dal 2026-09-02 se
    ne scrivono due copie: se la prima non si legge, si prende la seconda. */
 var K_CFG2="diario.config.bis";
+/* Un biglietto che dura il tempo di un ricaricamento: ripristina() ricarica la
+   pagina, quindi un messaggio tenuto in memoria non arriverebbe mai sotto gli
+   occhi. Non sono dati: si scrive, si legge una volta e si butta. */
+var K_NOTA="diario.nota";
 var OB_DEF={kcal:1500,fab:2200,p:160,c:120,g:45,peso:97};
 /* Il fabbisogno è sceso da 2500 a 2200 il 2026-08-21, chiesto da Manlio.
    Cambiare la costante non basta: chi usa già l'app ha il vecchio numero
@@ -498,6 +502,9 @@ function avvia(){
   S.voci=g.voci||[];
   S.passi=Number(g.passi)||0;
   if(!memOk) S.msg="Questo browser non permette il salvataggio. Esci dalla navigazione privata.";
+  var nota=leggi(K_NOTA,null);
+  if(nota&&nota.n){ try{ localStorage.removeItem(K_NOTA); }catch(e){}
+    S.msg="Mi sono messo in pari con la copia su Drive: "+nota.n+(nota.n===1?" giorno che qui mancava.":" giorni che qui mancavano."); }
   if(!S.msg){ var gf=copiaFerma(); if(gf) S.msg="La copia su Drive \u00e8 ferma da "+gf+" giorni. Apri Impostazioni: l\u00ec c\u2019\u00e8 scritto perch\u00e9."; }
   chiediMemoriaStabile();
   render();
@@ -2329,7 +2336,7 @@ function driveSalva(interattivo){
              buona. */
           return driveLeggi(tok,id).then(function(testo){
             var la=quantiGiorni(testo), qui=Object.keys(S.indice).length;
-            if(la!==null&&la>qui) return {fermo:true, id:id, indietro:true, la:la, qui:qui};
+            if(la!==null&&la>qui) return {fermo:true, id:id, indietro:true, la:la, qui:qui, testo:testo};
             return driveScrivi(tok,id,JSON.stringify(raccogli()));
           });
         });
@@ -2343,7 +2350,22 @@ function driveSalva(interattivo){
   }).then(function(r){
     S.drive.on=true; S.drive.id=r.id||S.drive.id;
     if(r.fermo){
-      if(r.indietro){ S.driveGiorni={la:r.la,qui:r.qui}; S.driveStato="indietro"; }
+      if(r.indietro){
+        S.driveGiorni={la:r.la,qui:r.qui}; S.driveStato="indietro";
+        /* **Mettersi in pari da soli, ma solo all'apertura e solo in questo
+           verso.** Chiesto il 2026-09-17: sul computer il Diario restava
+           fermo a com'era l'ultima volta, perché l'app sapeva soltanto
+           *mandare* a Drive, mai *prendere*. Qui la copia di là ha più giorni
+           di questa, e siccome i giorni non si cancellano mai vuol dire che
+           questa è indietro: prenderli può solo aggiungere.
+           Non è una sincronia e non va raccontata come tale — non fonde
+           niente e va in un senso solo. È "il dispositivo che guarda si mette
+           al passo con quello che scrive".
+           Solo quando non l'ha chiesto lui: se ha premuto un pulsante decide
+           lui cosa fare, e glielo diciamo invece di agire al posto suo.
+           Il testo ce l'abbiamo già in mano, quindi non si rilegge niente. */
+        if(!interattivo&&r.testo){ scrivi(K_NOTA,{n:r.la-r.qui}); S.importa=r.testo; ripristina(); return; }
+      }
       else S.driveStato=r.altrove?"altrove":(r.id?"riprendi":"quivuoto");
     }
     else { S.drive.rev=r.rev||null; S.drive.ultimo=Date.now(); S.driveStato="fatto"; }

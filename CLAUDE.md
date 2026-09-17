@@ -656,6 +656,24 @@ Non ribaltarle senza dirglielo esplicitamente.
   **La regola generale, e vale oltre Drive:** se una cosa che deve funzionare
   da sola si inceppa, dirlo in un pannello di impostazioni non è dirlo. Lui
   guarda la schermata di oggi, e basta.
+- **Il dispositivo indietro si mette in pari da solo, all'apertura**
+  (chiesto il 2026-09-17). Prima l'app sapeva soltanto *mandare* a Drive, mai
+  *prendere*: `driveRiprendi()` girava solo col suo dito sul pulsante, quindi
+  il computer restava fermo a com'era l'ultima volta e lui continuava a dire
+  "non si aggiorna". Ora, quando il tentativo automatico dei due secondi trova
+  su Drive più giorni di quelli di qui, quella copia se la prende e basta.
+  **Non è una sincronia e non va raccontata come tale**: va in un senso solo,
+  non fonde niente, e siccome i giorni non si cancellano mai può soltanto
+  aggiungere. È "chi guarda si mette al passo con chi scrive".
+  **Solo quando non l'ha chiesto lui.** Se ha premuto un pulsante, l'app gli
+  dice com'è messa e lo lascia decidere, invece di agire al posto suo — provato
+  che in quel caso non tocca niente.
+  Il messaggio dopo ("Mi sono messo in pari…") passa da `K_NOTA`, una chiave
+  usa-e-getta, perché `ripristina()` ricarica la pagina e un messaggio tenuto
+  in memoria non arriverebbe mai sotto gli occhi.
+  **Resta legato al permesso di Google**, che sul computer fallisce quasi
+  sempre in silenzio: lì continuerà a volere un tocco finché quel permesso non
+  funziona da solo.
 - **Due dispositivi collegati allo stesso Drive non sono una sincronia**, e il
   2026-09-17 si è visto cosa vuol dire: sul computer il Diario mostrava agosto
   pieno e settembre vuoto, e sembrava che l'app avesse perso i dati. Non aveva
