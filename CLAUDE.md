@@ -853,7 +853,26 @@ scheda.
   Il Diario non ha la `SCHEDA` e non può sapere che il tapis roulant dura 15': se
   provi a indovinarli qui, al primo cambio di scheda il numero diventa falso.
 - **Le calorie sono una stima e non entrano nel deficit**, esattamente come per i
-  passi e per la stessa decisione sua. `kcalPalestra()` usa il conto classico
+  passi e per la stessa decisione sua.
+  **Dal 2026-09-17 si toglie il metabolismo basale di quei minuti** (`met-1`).
+  Il conto classico dà la spesa **lorda**, che dentro ha anche quello che il
+  corpo avrebbe speso stando fermo per lo stesso tempo, e quello sta già tutto
+  dentro il fabbisogno di 2200, che è la spesa di una giornata intera:
+  contarlo qui vuol dire contarlo due volte. Se n'è accorto lui — "in palestra
+  ci sto un'ora e mezza, e in quel conto c'è dentro anche il metabolismo di
+  quell'ora e mezza" — e aveva ragione.
+  **Per i passi era già giusto dal principio** (0,5 kcal per chilo per
+  chilometro è la spesa *in più*): la palestra era rimasta lorda, quindi i due
+  numeri non erano nemmeno confrontabili fra loro, mentre stanno in due cerchi
+  con la stessa scala fatti apposta per confrontarli a occhio. **Se si aggiunge
+  una terza attività, va messa al netto anche quella.**
+  Una seduta intera (34 serie + 30' di cardio, 97 kg) è passata da ~560 a ~420
+  kcal: verificato contro il conto fatto a mano. `RIF_BRUCIATE` resta 600 —
+  serve a rendere confrontabili i due cerchi, non a riempirli.
+  **La Palestra non calcola calorie** (verificato nel suo codice il
+  2026-09-17: nessun `kcal`, nessun MET): la stima vive solo qui, quindi non
+  c'è un secondo numero che possa contraddire questo.
+  `kcalPalestra()` usa il conto classico
   kcal/min = MET × 3,5 × kg / 200, con **MET 3,5 ai pesi** — quello dei circuiti *con
   il recupero dentro*, perché fra una serie e l'altra c'è un minuto fermo e contarlo
   come lavoro raddoppierebbe il numero — e **MET 5 al cardio**. Ogni serie vale un

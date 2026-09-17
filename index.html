@@ -628,10 +628,26 @@ function palestraDi(data){
    I minuti di cardio arrivano già contati dalla Palestra, che è l'unica a
    sapere quanto dura ogni blocco. */
 var MET_PESI=3.5, MET_CARDIO=5, MIN_PER_SERIE=1.5;
+/* **Si toglie il metabolismo basale di quei minuti** (`met-1`), dal
+   2026-09-17. Il conto classico `MET x 3,5 x kg / 200` dà la spesa **lorda**,
+   che dentro ha anche quello che il corpo avrebbe speso stando fermo per lo
+   stesso tempo — e quello sta già tutto dentro il fabbisogno di 2200, che è
+   la spesa di una giornata intera. Contarlo qui vuol dire contarlo due volte.
+   Se n'è accorto Manlio: "in palestra ci sto un'ora e mezza, e in quel conto
+   c'è dentro anche il metabolismo di quell'ora e mezza".
+   **Per i passi questo era già giusto dal principio**: `kcalPassi()` usa 0,5
+   kcal per chilo per chilometro, che è la spesa *in più* rispetto allo stare
+   fermi. La palestra era rimasta lorda, quindi i due numeri non erano nemmeno
+   confrontabili fra loro — e stanno in due cerchi con la stessa scala, fatti
+   apposta per essere confrontati a occhio.
+   Una seduta intera (34 serie + 30' di cardio, 97 kg) passa da ~560 a ~420
+   kcal. Il numero più basso è quello vero. Non cambia niente nel deficit né
+   nei grammi di grasso: quella stima non è mai entrata nei conti, per
+   decisione sua. */
 function kcalPalestra(v){
   var pe=Number(S.ob.peso)||0;
   if(!v||!pe) return 0;
-  var q=function(met,min){ return met*3.5*pe/200*min; };
+  var q=function(met,min){ return (met-1)*3.5*pe/200*min; };
   return q(MET_PESI,(Number(v.serie)||0)*MIN_PER_SERIE)+q(MET_CARDIO,Number(v.minC)||0);
 }
 /* ---------- quello che hai bruciato: camminata e palestra ----------
