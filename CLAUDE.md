@@ -567,6 +567,23 @@ Non ribaltarle senza dirglielo esplicitamente.
   rotta non deve impedire di farne una buona.
   **Questa non è una schermata d'errore**: è l'app che si rifiuta di rovinare
   la copia, quindi si racconta in grigio e non in rosso.
+  La quarta, dal 2026-09-17: **non si riscrive una copia identica.** Ogni
+  scrittura cambia il segnaposto del file, e da lì l'altro dispositivo vede
+  "copia toccata da qualcun altro" e smette di fare le sue. **È così che era
+  cominciata la storia dei quindici giorni**: il computer, collegato e con gli
+  stessi giorni del telefono, riscriveva il file a ogni apertura senza
+  aggiungerci niente, e ogni volta zittiva il telefono. La terza guardia non
+  bastava, perché ferma solo chi ha *meno* giorni, non chi ne ha *uguali*.
+  Il confronto lo fa `firmaCopia()`: per ogni giorno, quante voci, quante
+  calorie, quanti passi, in ordine di data. **Non si confrontano i due testi**
+  perché l'ordine dei giorni in memoria cambia da un dispositivo all'altro e
+  due copie identiche risulterebbero diverse. L'impronta prende anche le
+  modifiche a un giorno che c'è già — una voce aggiunta a oggi si copia
+  eccome, ed è il caso da non rompere mai.
+  Quando le due copie sono uguali **si aggiorna comunque la data dell'ultima
+  copia**: quella copia *è* aggiornata, e senza questo `copiaFerma()`
+  avviserebbe che è vecchia proprio mentre è perfetta — cosa che succedeva sul
+  computer, che legge ma non scrive.
   La seconda: **non si sovrascrive una copia toccata da qualcun altro.** Prima di
   scrivere si chiede a Drive quando è stato modificato il file e lo si confronta con
   `S.drive.rev`, il segnaposto lasciato dalla nostra ultima scrittura o lettura. Se non
@@ -656,6 +673,15 @@ Non ribaltarle senza dirglielo esplicitamente.
   **La regola generale, e vale oltre Drive:** se una cosa che deve funzionare
   da sola si inceppa, dirlo in un pannello di impostazioni non è dirlo. Lui
   guarda la schermata di oggi, e basta.
+- **Attenzione a spiegare i suoi sintomi con le proprie ipotesi.** Il
+  2026-09-17 ho concluso che sul computer mancasse la sessione Google e che la
+  messa in pari automatica avesse funzionato da sola. Erano sbagliate tutte e
+  due: in quel browser lui era sempre stato dentro Google (l'iconcina in alto a
+  destra), e il computer l'aveva aggiornato **a mano**, Collega più Riprendi.
+  La fascia non compariva perché il computer era scollegato — gliel'avevo fatto
+  scollegare io il giorno prima, e scollegato non prova niente e non avvisa di
+  niente. **Lui vede l'app, io no**: quando racconta cosa ha fatto, quello è il
+  dato; quello che deduco io dal codice è un'ipotesi finché non combacia.
 - **Sul computer l'automatismo non basta, e la ragione è fuori dall'app**
   (2026-09-17). La messa in pari automatica gira nel tentativo silenzioso dei
   due secondi, che per leggere Drive vuole un permesso Google chiesto **senza

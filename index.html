@@ -1797,6 +1797,7 @@ function vistaImpostazioni(){
   }
   if(S.driveStato==="corso")    h+='<div class="nota">Sto parlando con Google…</div>';
   if(S.driveStato==="fatto")    h+='<div class="nota">Copia salvata su Drive.</div>';
+  if(S.driveStato==="uguale")   h+='<div class="nota">La copia su Drive era gi\u00e0 uguale a questa: non c\u2019era niente da riscrivere.</div>';
   if(S.driveStato==="rete")     h+='<div class="nota">Nessuna rete: riprovo da solo la prossima volta.</div>';
   if(S.driveStato==="vuoto")    h+='<div class="errore">Su Drive non c\'è ancora nessuna copia.</div>';
   /* Questi due mandano a "Riprendi il diario da Drive", che c'è solo da
@@ -2276,6 +2277,20 @@ function driveLeggi(tok,id){
   return chiamaDrive(tok,"https://www.googleapis.com/drive/v3/files/"+id+"?alt=media").then(function(r){ return r.text(); });
 }
 
+/* **L'impronta di una copia**: cosa contiene, indipendentemente dall'ordine in
+   cui i giorni stanno in memoria (che cambia da un dispositivo all'altro, e
+   renderebbe inutile un confronto fra i due testi). Per ogni giorno: quante
+   voci, quante calorie, quanti passi. Se due copie hanno la stessa impronta,
+   riscriverne una sopra l'altra non aggiunge niente a nessuno. */
+function firmaCopia(giorni){
+  if(!giorni) return null;
+  var chiavi=Object.keys(giorni).sort(), out=[], i, g, t;
+  for(i=0;i<chiavi.length;i++){
+    g=giorni[chiavi[i]]||{}; t=g.totali||{};
+    out.push(chiavi[i]+":"+((g.voci||[]).length)+":"+Math.round(Number(t.kcal)||0)+":"+(Number(g.passi)||0));
+  }
+  return out.join("|");
+}
 /* Quanti giorni ci sono dentro una copia. null se non si riesce a leggerla:
    chi chiama deve distinguere "di là ce n'è meno" da "non lo so". */
 function quantiGiorni(testo){
@@ -2345,9 +2360,21 @@ function driveSalva(interattivo){
              blocca niente: una copia rotta non deve impedire di farne una
              buona. */
           return driveLeggi(tok,id).then(function(testo){
-            var la=quantiGiorni(testo), qui=Object.keys(S.indice).length;
+            var copia=null; try{ copia=JSON.parse(testo); }catch(e){}
+            var giorniLa=copia&&copia.giorni;
+            var la=giorniLa?Object.keys(giorniLa).length:null, qui=Object.keys(S.indice).length;
             if(la!==null&&la>qui) return {fermo:true, id:id, indietro:true, la:la, qui:qui, testo:testo};
-            return driveScrivi(tok,id,JSON.stringify(raccogli()));
+            /* **Quarta guardia: non riscrivere una copia identica.** Ogni
+               scrittura cambia il segnaposto del file, e da quel momento
+               l'altro dispositivo vede "copia toccata da qualcun altro" e
+               smette di fare le sue. È così che il telefono di Manlio è
+               rimasto quindici giorni senza copia: il computer, collegato e
+               con gli stessi giorni, riscriveva il file a ogni apertura senza
+               aggiungerci niente. Una scrittura che non aggiunge niente ha
+               solo il costo di zittire l'altro. */
+            var mio=raccogli();
+            if(giorniLa&&firmaCopia(giorniLa)===firmaCopia(mio.giorni)) return {fermo:true, id:id, uguale:true};
+            return driveScrivi(tok,id,JSON.stringify(mio));
           });
         });
       });
@@ -2360,7 +2387,12 @@ function driveSalva(interattivo){
   }).then(function(r){
     S.drive.on=true; S.drive.id=r.id||S.drive.id;
     if(r.fermo){
-      if(r.indietro){
+      /* La copia di là è già questa: vale come copia fatta adesso, perciò si
+         aggiorna la data. Se no `copiaFerma()` continuerebbe ad avvisare che
+         la copia è vecchia proprio mentre è perfettamente aggiornata — ed è
+         quello che succederebbe sul computer, che legge ma non scrive. */
+      if(r.uguale){ S.drive.ultimo=Date.now(); S.driveStato="uguale"; }
+      else if(r.indietro){
         S.driveGiorni={la:r.la,qui:r.qui}; S.driveStato="indietro";
         /* **Mettersi in pari da soli, ma solo all'apertura e solo in questo
            verso.** Chiesto il 2026-09-17: sul computer il Diario restava
