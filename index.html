@@ -61,6 +61,8 @@ input,textarea{font-family:inherit}
 .avviso{margin:0 18px 12px;padding:11px 13px;background:var(--inchiostro);color:var(--su-inchiostro);font-size:13px;border-radius:3px;display:flex;justify-content:space-between;gap:10px}
 .avviso b{font-weight:600}
 .avviso-x{font-family:var(--mono);font-size:10.5px;opacity:.65;white-space:nowrap}
+.avviso-b{flex:none;background:var(--su-inchiostro);color:var(--inchiostro);border:0;border-radius:3px;
+  padding:7px 11px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
 
 .corpo{padding:0 18px;display:flex;flex-direction:column;gap:12px}
 
@@ -504,8 +506,10 @@ function avvia(){
   if(!memOk) S.msg="Questo browser non permette il salvataggio. Esci dalla navigazione privata.";
   var nota=leggi(K_NOTA,null);
   if(nota&&nota.n){ try{ localStorage.removeItem(K_NOTA); }catch(e){}
-    S.msg="Mi sono messo in pari con la copia su Drive: "+nota.n+(nota.n===1?" giorno che qui mancava.":" giorni che qui mancavano."); }
-  if(!S.msg){ var gf=copiaFerma(); if(gf) S.msg="La copia su Drive \u00e8 ferma da "+gf+" giorni. Apri Impostazioni: l\u00ec c\u2019\u00e8 scritto perch\u00e9."; }
+    S.msgAz=null; S.msg="Mi sono messo in pari con la copia su Drive: "+nota.n+(nota.n===1?" giorno che qui mancava.":" giorni che qui mancavano."); }
+  if(!S.msg){ var gf=copiaFerma(); if(gf){
+    S.msg="La copia su Drive \u00e8 ferma da "+gf+" giorni.";
+    S.msgAz={az:"in-pari",testo:"Aggiorna"}; } }
   chiediMemoriaStabile();
   render();
   aggiornaCerchio();
@@ -975,7 +979,12 @@ function render(){
      (lato?'<span class="titolo-lato">'+lato+'</span>':"")+'</h1></div>'+
      '<div class="spia"></div></div></header>';
 
-  if(S.msg) h+='<div class="avviso" data-az="chiudi-msg">'+esc(S.msg)+' <span class="avviso-x">chiudi</span></div>';
+  /* La fascia può portarsi dietro un pulsante: un avviso che dice che
+     qualcosa è fermo, senza il modo di rimetterlo in moto lì dov'è scritto,
+     costringe a cercarlo dentro le Impostazioni. */
+  if(S.msg) h+='<div class="avviso" data-az="chiudi-msg"><span>'+esc(S.msg)+'</span>'+
+    (S.msgAz?'<button class="avviso-b" data-az="'+S.msgAz.az+'">'+esc(S.msgAz.testo)+'</button>':'')+
+    '<span class="avviso-x">chiudi</span></div>';
 
   h+='<main class="corpo">';
   if(S.daContapassi) h+=avvisoPassi();
@@ -1848,7 +1857,8 @@ document.getElementById("app").addEventListener("click",function(ev){
   var az=b.getAttribute("data-az"), v=b.getAttribute("data-v");
 
   if(az==="vista"){ S.vista=v; S.scelto=null; S.focus=null; S.aperto=null; S.finestra=null; S.scrivo=null; if(v==="aggiungi"){S.pasto=pastoDaOra();} render(); }
-  else if(az==="chiudi-msg"){ S.msg=null; render(); }
+  else if(az==="chiudi-msg"){ S.msg=null; S.msgAz=null; render(); }
+  else if(az==="in-pari"){ S.msgAz=null; driveInPari(); }
   else if(az==="togli"){
     var id=b.getAttribute("data-id"), gio=b.getAttribute("data-g")||S.data;
     var fuori=function(x){ return x.id!==id; };
@@ -2420,6 +2430,46 @@ function driveRiprendi(){
     S.drivePerche=e.perche||"";
     S.driveStato=e.tipo==="vuoto"?"vuoto":(e.tipo==="rete"?"rete":"permesso");
     render();
+  });
+}
+/* **Mettersi in pari con un tocco.** La messa in pari automatica esiste già,
+   ma per leggere Drive vuole il permesso di Google, e quel permesso chiesto in
+   silenzio sul computer non arriva quasi mai: lì l'automatismo non parte e il
+   Diario resta fermo (Manlio, 2026-09-17, dopo quattro tentativi miei che sul
+   computer non cambiavano niente).
+   Questa è la stessa cosa fatta col suo dito: il tocco apre la finestra di
+   Google, che sul computer funziona. **Prende solo se di là ci sono più
+   giorni**, quindi è innocua anche sul telefono, che è avanti: lì dirà che è
+   già al passo e non toccherà niente. */
+function driveInPari(){
+  S.driveStato="corso"; S.msg=null; render();
+  var riprovato=false;
+  function giro(){
+    return permessoDrive(!GTOK).then(function(tok){
+      var p=S.drive.id?Promise.resolve(S.drive.id):driveCerca(tok);
+      return p.then(function(id){
+        if(!id) throw erroreDrive("vuoto");
+        return driveLeggi(tok,id).then(function(testo){
+          var la=quantiGiorni(testo), qui=Object.keys(S.indice).length;
+          if(la===null||la<=qui) return null;
+          return driveQuandoTocca(tok,id).then(function(rev){
+            S.drive.id=id; S.drive.rev=rev||null; S.drive.on=true; salvaCfg();
+            return {testo:testo, n:la-qui};
+          });
+        });
+      });
+    });
+  }
+  giro().catch(function(e){
+    if(e.tipo==="scaduto"&&!riprovato){ riprovato=true; GTOK=null; return giro(); }
+    throw e;
+  }).then(function(r){
+    if(!r){ S.driveStato=""; S.msg="Sei gi\u00e0 al passo con la copia su Drive: di l\u00e0 non c\u2019\u00e8 niente in pi\u00f9."; render(); return; }
+    scrivi(K_NOTA,{n:r.n}); S.importa=r.testo; ripristina();
+  }).catch(function(e){
+    S.drivePerche=e.perche||"";
+    S.driveStato=e.tipo==="vuoto"?"vuoto":(e.tipo==="rete"?"rete":"permesso");
+    S.vista="impostazioni"; render();
   });
 }
 function driveScollega(){

@@ -656,6 +656,26 @@ Non ribaltarle senza dirglielo esplicitamente.
   **La regola generale, e vale oltre Drive:** se una cosa che deve funzionare
   da sola si inceppa, dirlo in un pannello di impostazioni non è dirlo. Lui
   guarda la schermata di oggi, e basta.
+- **Sul computer l'automatismo non basta, e la ragione è fuori dall'app**
+  (2026-09-17). La messa in pari automatica gira nel tentativo silenzioso dei
+  due secondi, che per leggere Drive vuole un permesso Google chiesto **senza
+  finestra**. Quella richiesta silenziosa riesce solo se in *quel* browser c'è
+  una sessione Google attiva: sul telefono sì, sul computer di Manlio no. Da
+  lì, quattro mie modifiche di fila che sul computer non cambiavano niente —
+  e lui che giustamente continuava a dire "non si aggiorna".
+  **Il permesso non si può conservare** (`GTOK` vive in memoria, per scelta), e
+  un token dura comunque un'ora mentre lui apre l'app a giorni di distanza:
+  quindi non c'è modo, dentro il codice, di rendere quel computer automatico.
+  L'unica strada vera è entrare in Chrome con l'account Google su quella
+  macchina.
+  Quello che si può fare dentro l'app è **mettere il tocco dove guarda lui**:
+  la fascia in cima ora si porta dietro un pulsante ("Aggiorna"), che chiama
+  `driveInPari()` — il tocco apre la finestra di Google, che sul computer
+  funziona. **Prende solo se di là ci sono più giorni**, quindi si può premere
+  anche sul telefono senza rischi: dice che è già al passo e non tocca niente.
+  **La lezione, e vale in generale:** quando una modifica non cambia niente per
+  lui, la quinta modifica non è la risposta. Va cercato cosa impedisce a tutte
+  di funzionare — qui era una cosa che nel codice non si vedeva.
 - **Il dispositivo indietro si mette in pari da solo, all'apertura**
   (chiesto il 2026-09-17). Prima l'app sapeva soltanto *mandare* a Drive, mai
   *prendere*: `driveRiprendi()` girava solo col suo dito sul pulsante, quindi
