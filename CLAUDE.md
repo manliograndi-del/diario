@@ -432,6 +432,31 @@ Non ribaltarle senza dirglielo esplicitamente.
   cancella niente — ma i mesi passati si potevano guardare **solo uno alla
   volta**, tornando indietro con la freccia. Il problema era vederli, non
   tenerli.
+- **"Bruciato negli ultimi 20 giorni"**, il grafico sotto quello delle calorie
+  (chiesto il 2026-09-20). Una barra verde al giorno: camminata più palestra,
+  con `bruciateDi()`.
+  **Sono 20 giorni di calendario, non i 20 registrati.** Un giorno in cui non
+  si è mosso è un dato, e saltarlo farebbe sembrare continua una striscia che
+  continua non è. Stessa scelta della striscia dei 7 giorni. Per la stessa
+  ragione i giorni li conta il calendario e non `diario.indice`: **una seduta
+  di palestra senza niente da mangiare segnato non sta nell'indice del Diario**
+  ma è attività eccome, e lì dentro c'è (verificato: 420 kcal su un giorno di
+  sola palestra).
+  **Camminata e palestra stanno in una barra sola**, perché lui ha chiesto il
+  totale. Dividerle vorrebbe due colori che nella tavolozza non ci sono — il
+  verde è "bruciato" e basta — e la divisione si legge già nelle due carte di
+  Oggi. Se un giorno la chiede qui, servono due colori nuovi, non una tinta
+  schiarita a mano (di notte sparirebbe).
+  **La scala è il massimo dei venti giorni, non `RIF_BRUCIATE`:** quello serve
+  a rendere confrontabili i due cerchi affiancati, qui le barre si confrontano
+  già fra loro e una scala fissa schiaccerebbe tutto in basso nelle settimane
+  tranquille.
+  **Le date sotto sono una ogni cinque** (venti scritte da 8,5 px su un
+  telefono stretto non si leggono) e possono debordare nelle celle vuote
+  accanto, se no verrebbero tagliate. Provato a 320, 390 e 430 px, chiaro e
+  scuro, senza scorrimento laterale.
+  Il piede dice su quanti giorni è calcolata la media, e che sono stime che
+  non entrano nel deficit: senza, quel numero sembrerebbe entrare nei conti.
 - **Lo Storico si apre sull'ultimo mese che ha dei giorni**, non sul mese di
   oggi. Il 2026-09-01 Manlio ha aperto lo Storico, ha visto il calendario di
   settembre vuoto e ha scritto "sono spariti tutti i dati". Non era sparito

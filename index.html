@@ -207,6 +207,10 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
    **Non rimettere misure fisse qui**: barre e linee devono leggere la stessa
    altezza, ed è quella di .g-barre. */
 .grafico{margin-top:14px;padding-right:26px}
+.grafico.nuda{padding-right:0}
+/* con una data ogni cinque, quelle che restano devono poter uscire dalla loro
+   cella e prendersi lo spazio di quelle vuote accanto, se no si tagliano */
+.g-date.rada .col-e{overflow:visible}
 .g-barre{display:flex;gap:4px;align-items:flex-end;height:118px;position:relative}
 .g-date{display:flex;gap:4px}
 .col{flex:1;min-width:0;display:flex;align-items:flex-end;height:100%}
@@ -1749,6 +1753,8 @@ function vistaStorico(){
   ultimi.forEach(function(d){ h+='<div class="col-e">'+dataBreve(d)+'</div>'; });
   h+='</div></div></section>';
 
+  h+=pannelloBruciate();
+
   giorni.forEach(function(d){
     var v=S.indice[d];
     h+='<div class="gruppo"><button class="giorno" data-az="apri" data-d="'+d+'"><div>'+
@@ -1762,6 +1768,49 @@ function vistaStorico(){
   return h;
 }
 
+/* **Quanto hai bruciato, giorno per giorno** (chiesto il 2026-09-20).
+   Sono **20 giorni di calendario**, non i 20 registrati: un giorno in cui non
+   ti sei mosso è un dato, e saltarlo farebbe sembrare continua una striscia
+   che continua non è. Stessa scelta della striscia dei 7 giorni.
+   Per la stessa ragione i giorni li conta il calendario e non `diario.indice`:
+   una seduta di palestra senza niente da mangiare segnato non entra
+   nell'indice del Diario, ma è attività eccome, e qui deve esserci.
+   Camminata e palestra stanno **in una barra sola**: lui ha chiesto "la
+   quantità di calorie consumate per l'attività fisica", che è il totale. La
+   divisione fra le due si legge già nelle due carte di Oggi e nel dettaglio
+   del giorno. Se un giorno la volesse qui, servono due colori che adesso non
+   esistono — nella tavolozza il verde è "bruciato" e basta.
+   **La scala è il massimo dei venti giorni**, non `RIF_BRUCIATE`: lì serviva a
+   rendere confrontabili due cerchi affiancati, qui le barre si confrontano già
+   fra loro e una scala fissa schiaccerebbe tutto in basso nelle settimane
+   tranquille.
+   Le date sotto sono una ogni cinque: venti scritte da 8,5px su un telefono
+   stretto non si leggerebbero. Quelle che restano possono debordare nelle
+   celle vuote accanto (`.rada`), se no verrebbero tagliate. */
+function bruciateDi(iso){
+  var g=S.indice[iso], pal=S.pal&&S.pal[iso];
+  return kcalPassi(g?(Number(g.passi)||0):0)+(pal?kcalPalestra(pal):0);
+}
+function pannelloBruciate(){
+  var giorni=[], i, iso;
+  for(i=19;i>=0;i--) giorni.push(isoSposta(oggiISO(),-i));
+  var v=giorni.map(bruciateDi), mx=Math.max.apply(null,[1].concat(v));
+  var attivi=v.filter(function(x){return x>0;});
+  if(!attivi.length) return "";
+  var media=attivi.reduce(function(a,b){return a+b;},0)/attivi.length;
+
+  var h='<section class="pannello"><div class="etichetta">Bruciato negli ultimi 20 giorni</div>'+
+        '<div class="grafico nuda"><div class="g-barre">';
+  v.forEach(function(k){
+    h+='<div class="col"><div class="col-b" style="height:'+((k/mx)*100)+'%;background:var(--verde)"></div></div>';
+  });
+  h+='</div><div class="g-date rada">';
+  giorni.forEach(function(d,i){ h+='<div class="col-e">'+((i%5===4)?dataBreve(d):"")+'</div>'; });
+  h+='</div></div>'+
+     '<div class="p-piede">'+attivi.length+(attivi.length===1?' giorno':' giorni')+' con attivit\u00e0, '+
+     num(media)+' kcal in media in quei giorni. Sono stime, e non entrano nel deficit.</div></section>';
+  return h;
+}
 function vistaImpostazioni(){
   var h='<section class="pannello"><div class="etichetta">Obiettivi giornalieri</div><div class="griglia">';
   [["kcal","Obiettivo kcal"],["fab","Fabbisogno kcal"],["p","Proteine (g)"],["c","Carboidrati (g)"],["g","Grassi (g)"],["peso","Il tuo peso (kg)"]].forEach(function(x){
