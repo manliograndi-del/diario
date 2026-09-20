@@ -1412,7 +1412,18 @@ function vistaOggi(){
         ?"Qui non c\u2019è ancora niente. Registra il primo alimento appena lo mangi: bastano dieci secondi."
         :"Nessuna voce per oggi. Registra il primo alimento appena lo mangi: bastano dieci secondi.");
     if(maiUsato){
-      h+='<label class="b2">Ho un file di backup, caricalo'+
+      /* **Le due vie di ritorno stanno tutte e due qui, dal 2026-09-20.**
+         Quel giorno Manlio ha pulito il browser — cosa che ha il diritto di
+         fare — e la pulizia porta via l'intero sito: giorni, impostazioni e
+         collegamento a Drive insieme. L'app si è ritrovata come appena
+         installata, **senza più sapere che su Drive c'era la sua copia**, e
+         quel bottone lo offriva solo per il file. Il riquadro di Drive nelle
+         Impostazioni lo dice, ma lui lì non ci entra: l'ha ritrovato perché
+         gliel'ho detto io in chat, e la prossima volta potrei non esserci.
+         `driveInPari()` qui fa tutto in un tocco — chiede il permesso, cerca
+         il file, e siccome di qua non c'è niente può solo aggiungere. */
+      h+='<button class="b2" data-az="in-pari">La mia copia \u00e8 su Google Drive, riprendila</button>'+
+         '<label class="b2">Ho un file di backup, caricalo'+
          '<input class="file-nascosto" type="file" accept=".json,application/json" data-in="file-backup"></label>';
     }
     h+='</div>';

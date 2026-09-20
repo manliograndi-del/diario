@@ -414,6 +414,31 @@ Non ribaltarle senza dirglielo esplicitamente.
   volta: **Drive è uno specchio, il file scaricato è una fotografia**. Lo
   specchio segue anche i guai — se i dati qui si rovinano, la copia di là
   diventa rovinata anche lei — la fotografia no.
+- **Manlio pulisce il browser, ha il diritto di farlo, e la pulizia porta via
+  tutto** (2026-09-20). Quel giorno il Diario si è trovato vuoto: non è stata
+  l'app. La prova è venuta in un colpo solo — **anche la Palestra era vuota**,
+  e il Diario dalla parte della Palestra non scrive mai una riga; in più un
+  service worker non ha proprio accesso a quella memoria, il browser non
+  glielo permette. Era "Cancella dati di navigazione" con la casella dei dati
+  dei siti spuntata, che porta via l'intero indirizzo: giorni, impostazioni e
+  collegamento a Drive insieme.
+  **`navigator.storage.persist()` non c'entra e non va raccontato come una
+  difesa contro questo**: protegge dalla pulizia *automatica* del browser, non
+  da una cancellazione che l'utente chiede. Quel giorno il telefono aveva
+  accettato, e i dati sono spariti lo stesso.
+  **Perciò la pulizia non si combatte, si sopravvive.** Le due copie restano
+  l'unica risposta, e il file scaricato più di Drive — questo l'ha salvato
+  Drive, ma per un pelo.
+  **Dopo una pulizia l'app non sa più nemmeno di avere una copia su Drive**,
+  perché il collegamento sta nelle impostazioni ed è sparito con tutto il
+  resto. Si ripresenta come appena installata. Per questo nella schermata di
+  oggi, a diario vuoto, ora ci sono **tutte e due le vie di ritorno**: "La mia
+  copia è su Google Drive, riprendila" (che chiama `driveInPari()`: chiede il
+  permesso, cerca il file e lo prende, e da un diario vuoto può solo
+  aggiungere) e il file di backup, che c'era già.
+  **Non metterle solo nelle Impostazioni**: lì dentro lui non entra, e il
+  2026-09-20 ha ritrovato la sua copia soltanto perché gliel'ho detto io in
+  chat. La prossima volta potrei non esserci.
 - **Lo storico non si cancella mai.** Ogni giorno registrato resta in
   `diario.g.<data>` e in `diario.indice` per sempre; l'unica `delete` che c'è
   toglie dall'indice un giorno rimasto senza voci e senza passi, cioè un giorno
