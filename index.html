@@ -207,7 +207,6 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
    **Non rimettere misure fisse qui**: barre e linee devono leggere la stessa
    altezza, ed è quella di .g-barre. */
 .grafico{margin-top:14px;padding-right:26px}
-.grafico.nuda{padding-right:0}
 /* con una data ogni cinque, quelle che restano devono poter uscire dalla loro
    cella e prendersi lo spazio di quelle vuote accanto, se no si tagliano */
 .g-date.rada .col-e{overflow:visible}
@@ -481,7 +480,7 @@ var S={
   mese:null, apertoDove:"lista", finestra:null,
   drive:{on:false,id:null,ultimo:null,rev:null}, driveStato:"",
   passi:0, apertoPassi:0, daContapassi:null, pal:{},
-  cerchio:false, scrivo:null, grezzo:null, primaEra:null,
+  cerchio:false, scrivo:null, grezzo:null, primaEra:null, ultimoFile:null,
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
   aperto:null, apertoVoci:[], export:"", importa:"", msg:null, spia:"", focus:null
@@ -494,6 +493,7 @@ function avvia(){
            if(cfg.drive) S.drive=Object.assign({on:false,id:null,ultimo:null,rev:null},cfg.drive);
            if(cfg.tema==="chiaro"||cfg.tema==="scuro"||cfg.tema==="auto") S.tema=cfg.tema;
            S.cerchio=!!cfg.cerchio;
+           S.ultimoFile=Number(cfg.ultimoFile)||null;
            if(!(Number(cfg.fabV)>=FAB_V)){
              if(S.ob.fab===FAB_VECCHIO) S.ob.fab=FAB_NUOVO;
              salvaCfg();
@@ -514,6 +514,12 @@ function avvia(){
   if(!S.msg){ var gf=copiaFerma(); if(gf){
     S.msg="La copia su Drive \u00e8 ferma da "+gf+" giorni.";
     S.msgAz={az:"in-pari",testo:"Aggiorna"}; } }
+  /* Dopo la copia ferma, che è più urgente: quella è una cosa che dovrebbe
+     funzionare da sola e non funziona. Questa è un promemoria. */
+  if(!S.msg){ var fv=fileVecchio(); if(fv>=0){
+    S.msg=fv===0?"Non hai mai scaricato il file di backup."
+                :"Non scarichi il file di backup da "+fv+" giorni.";
+    S.msgAz={az:"scarica",testo:"Scarica"}; } }
   chiediMemoriaStabile();
   render();
   aggiornaCerchio();
@@ -720,7 +726,7 @@ function chiediMemoriaStabile(){
   }).catch(function(){});
 }
 function salvaCfg(){
-  var c={ob:S.ob,miei:S.miei,recenti:S.recenti,tema:S.tema,fabV:FAB_V,drive:S.drive,cerchio:S.cerchio};
+  var c={ob:S.ob,miei:S.miei,recenti:S.recenti,tema:S.tema,fabV:FAB_V,drive:S.drive,cerchio:S.cerchio,ultimoFile:S.ultimoFile};
   scrivi(K_CFG,c); scrivi(K_CFG2,c);
 }
 
@@ -1810,10 +1816,27 @@ function pannelloBruciate(){
   if(!attivi.length) return "";
   var media=attivi.reduce(function(a,b){return a+b;},0)/attivi.length;
 
+  /* **Qualche riferimento per capire le altezze** (chiesto il 2026-09-20:
+     "metterei qualche riferimento della scala per capire meglio"). Senza, le
+     barre dicevano solo quale giorno è più alto di quale, non quanto.
+     I numeri sono tondi e scelti sulla scala del momento, non fissi: con un
+     passo fisso, in una settimana tranquilla le linee finirebbero tutte sopra
+     le barre, e in una carica tutte schiacciate in basso. Si cerca il primo
+     passo tondo che lasci al massimo quattro tacche, e se ne disegnano tre al
+     più: di più farebbero griglia, e questo non è un foglio a quadretti. */
+  var passi=[50,100,200,250,500,1000], passo=passi[passi.length-1], i2;
+  for(i2=0;i2<passi.length;i2++){ if(mx/passi[i2]<=4){ passo=passi[i2]; break; } }
+  var linee=[];
+  for(i2=passo;i2<mx*0.97&&linee.length<3;i2+=passo) linee.push(i2);
+
   var h='<section class="pannello"><div class="etichetta">Bruciato negli ultimi 20 giorni</div>'+
-        '<div class="grafico nuda"><div class="g-barre">';
+        '<div class="grafico"><div class="g-barre">';
   v.forEach(function(k){
     h+='<div class="col"><div class="col-b" style="height:'+((k/mx)*100)+'%;background:var(--verde)"></div></div>';
+  });
+  /* stessa percentuale delle barre, come nell'altro grafico: non possono scollarsi */
+  linee.forEach(function(k){
+    h+='<div class="obiettivo fabb" style="bottom:'+((k/mx)*100)+'%"><i>'+k+'</i></div>';
   });
   h+='</div><div class="g-date rada">';
   giorni.forEach(function(d,i){ h+='<div class="col-e">'+((i%5===4)?dataBreve(d):"")+'</div>'; });
@@ -2221,7 +2244,8 @@ function scaricaBackup(){
     a.href=url; a.download="diario-"+oggiISO()+".json";
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){URL.revokeObjectURL(url);},2000);
-    S.msg="File scaricato."; render();
+    S.ultimoFile=Date.now(); salvaCfg();
+    S.msg="File scaricato."; S.msgAz=null; render();
   }catch(e){ S.msg="Scaricamento non riuscito. Usa il testo da copiare."; render(); }
 }
 function ripristina(){
@@ -2384,6 +2408,22 @@ function quantiGiorni(testo){
    intanto passavano i giorni senza copia.
    Tre giorni è la soglia: sotto, capita di non aprire l'app e non vuol dire
    niente; sopra, qualcosa si è inceppato per davvero. */
+/* **Il file scaricato invecchia, e lui se ne dimentica** (chiesto il
+   2026-09-20, dopo che una pulizia del browser gli aveva portato via tutto e
+   l'unica copia rimasta era quella su Drive). Drive è uno specchio: se i dati
+   di qua si rovinano, la copia di là si rovina con loro. La fotografia no —
+   ma vale solo se è recente.
+   Trenta giorni è la soglia. **Non si avvisa un diario appena cominciato**:
+   sotto i sette giorni registrati non c'è ancora niente che valga la pena
+   salvare, e un'app che chiede backup il primo giorno insegna solo a ignorare
+   gli avvisi. */
+var GIORNI_FILE_VECCHIO=30, GIORNI_PRIMA_DI_CHIEDERE=7;
+function fileVecchio(){
+  if(Object.keys(S.indice).length<GIORNI_PRIMA_DI_CHIEDERE) return -1;
+  if(!S.ultimoFile) return 0;
+  var g=Math.floor((Date.now()-S.ultimoFile)/86400000);
+  return g>=GIORNI_FILE_VECCHIO?g:-1;
+}
 var GIORNI_COPIA_FERMA=3;
 function copiaFerma(){
   if(!S.drive.on||!S.drive.ultimo) return 0;

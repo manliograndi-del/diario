@@ -439,6 +439,22 @@ Non ribaltarle senza dirglielo esplicitamente.
   **Non metterle solo nelle Impostazioni**: lì dentro lui non entra, e il
   2026-09-20 ha ritrovato la sua copia soltanto perché gliel'ho detto io in
   chat. La prossima volta potrei non esserci.
+- **L'app ricorda quando ha scaricato l'ultimo file e glielo rammenta**
+  (chiesto il 2026-09-20, subito dopo la pulizia del browser che gli aveva
+  portato via tutto). `S.ultimoFile` sta in `diario.config`, lo scrive
+  `scaricaBackup()` e **`salvaCfg()` lo deve continuare a scrivere**, come
+  `cerchio`. Dopo **30 giorni** l'avviso compare nella fascia in cima col
+  pulsante che scarica lì.
+  **Non si avvisa un diario appena cominciato**: sotto sette giorni registrati
+  non c'è ancora niente che valga la pena salvare, e un'app che chiede backup
+  il primo giorno insegna solo a ignorare gli avvisi.
+  Viene **dopo** l'avviso della copia ferma: quello è una cosa che dovrebbe
+  funzionare da sola e non funziona, questo è un promemoria.
+  La ragione per cui esiste: **Drive è uno specchio e il file è una
+  fotografia**. Il 2026-09-20 l'ha salvato Drive, ma per un pelo — se la
+  pulizia fosse arrivata mentre la copia su Drive era ferma (ed era stata
+  ferma quindici giorni, poco prima), non ci sarebbe stato niente da cui
+  tornare.
 - **Lo storico non si cancella mai.** Ogni giorno registrato resta in
   `diario.g.<data>` e in `diario.indice` per sempre; l'unica `delete` che c'è
   toglie dall'indice un giorno rimasto senza voci e senza passi, cioè un giorno
@@ -482,6 +498,15 @@ Non ribaltarle senza dirglielo esplicitamente.
   scuro, senza scorrimento laterale.
   Il piede dice su quanti giorni è calcolata la media, e che sono stime che
   non entrano nel deficit: senza, quel numero sembrerebbe entrare nei conti.
+  **Fino a tre linee tratteggiate coi loro numeri** (chiesto il 2026-09-20:
+  "metterei qualche riferimento della scala per capire meglio"). Senza, le
+  barre dicevano solo quale giorno è più alto di quale, non quanto. I numeri
+  sono tondi ma **scelti sulla scala del momento, non fissi**: si cerca il
+  primo passo fra 50, 100, 200, 250, 500, 1000 che lasci al massimo quattro
+  tacche. Con un passo fisso, in una settimana tranquilla le linee finirebbero
+  tutte sopra le barre e in una carica tutte schiacciate in basso — provato a
+  tre livelli di attività, escono 50/100, oppure 200/400/600. Tre al massimo:
+  di più fanno griglia, e questo non è un foglio a quadretti.
 - **Lo Storico si apre sull'ultimo mese che ha dei giorni**, non sul mese di
   oggi. Il 2026-09-01 Manlio ha aperto lo Storico, ha visto il calendario di
   settembre vuoto e ha scritto "sono spariti tutti i dati". Non era sparito
