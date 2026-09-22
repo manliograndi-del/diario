@@ -819,6 +819,39 @@ Non ribaltarle senza dirglielo esplicitamente.
   offline per la sincronia.
 - Il travaso fra dispositivi oggi si fa da Impostazioni: si scarica il file di backup
   e sull'altro dispositivo si usa “Scegli il file di backup”.
+- **Il tasto "Look": 89 tavolozze fra cui scegliere** (chiesto il 2026-09-22,
+  copiando il meccanismo dall'app Spesa). Un look è solo un pugno di colori
+  scritti a mano nelle variabili del foglio di stile: la pagina li usa già
+  tutti, quindi cambiano insieme senza ricaricare niente.
+  **Delle 100 palette della Spesa qui ne stanno 89.** Le undici scartate hanno
+  un "rosso" verdastro: nella Spesa il rosso è solo l'accento e va benissimo,
+  **qui rosso e verde vogliono dire cose opposte** nel cerchio del grasso. Lo
+  scarto l'ha deciso un controllo e non l'occhio: tutte e 89 hanno contrasto
+  del testo sul fondo di almeno 4,5, e tengono distinti blu da senape (i due
+  anelli) e verde da rosso.
+  **I nomi non coincidono, i ruoli sì:** la traduzione dai nomi della Spesa
+  tiene il rapporto fra i colori, non la parola — il nostro `--linea` (il
+  bordo che si vede) prende il suo `linea-forte`, e `--traccia` (il
+  riempimento pallido) prende il suo `linea`. Se un giorno si riprendono le
+  palette da quel repository, rifare la traduzione così.
+  **Un look spegne il tema scuro automatico, e non è una svista.** Un colore
+  scritto sull'elemento vince su qualunque regola del foglio di stile — provato
+  — quindi `[data-tema="scuro"]` non riesce più a cambiare niente. Fra le tre
+  vie possibili Manlio ha scelto questa sapendolo. **Ma senza look scelto l'app
+  resta esattamente com'era**, buio serale compreso, e togliendo il look torna
+  tutto: verificato nei due versi. Non togliere il tema scuro per questo.
+  **`coloreGrassi()` e `coloreBarra()` ora leggono le variabili** invece di
+  avere le terne scritte dentro: erano l'unica eccezione ammessa alla regola
+  dei colori, e con un look addosso sarebbero rimaste dei colori vecchi mentre
+  tutto il resto cambiava — proprio nelle due cose che lui guarda di più.
+  `tinta()` le legge e le tiene in `CACHE_TINTE`, che si svuota **solo** quando
+  cambia il tema o il look: una barra sola chiede tre colori e le barre sono
+  venti. Provate tutte e 89 le palette su tutte e due le sfumature.
+  Il disegno della notifica segue da solo, perché i colori glieli manda già la
+  pagina leggendoli con `getComputedStyle` (vedi più avanti).
+  **Le righe si scelgono a occhio**: la striscia delle sei tinte conta più del
+  nome, che è in inglese e non dice niente. L'elenco si apre solo a richiesta,
+  se no le Impostazioni diventano un muro lungo due schermate.
 - **Tema scuro automatico dalle 20 alle 7** (chiesto il 2026-08-18), con Automatico /
   Chiaro / Scuro in Impostazioni. **Non** segue `prefers-color-scheme`: chi tiene il
   telefono sempre su chiaro non vedrebbe mai cambiare niente e penserebbe che sia

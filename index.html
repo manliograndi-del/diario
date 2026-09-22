@@ -221,6 +221,19 @@ input:focus,textarea:focus{outline:2px solid var(--blu);outline-offset:1px}
    dovrebbe portarsi dietro un fondo bianco, che gliene bucherebbe una */
 .obiettivo i{position:absolute;left:100%;bottom:-5px;padding-left:4px;font-family:var(--mono);
   font-style:normal;font-size:8.5px;color:var(--tenue);line-height:1.1;white-space:nowrap}
+/* la riga di un look: la striscia prima di tutto, il nome dopo */
+.look-riga{width:100%;display:flex;align-items:center;gap:10px;background:var(--superficie);
+  border:1px solid var(--linea);border-radius:3px;padding:8px 9px;margin-top:6px;
+  font:inherit;color:var(--inchiostro);text-align:left;cursor:pointer}
+.look-riga.on{border-color:var(--inchiostro);border-width:2px;padding:7px 8px}
+.look-str{flex:none;display:flex;border:1px solid var(--linea);border-radius:2px;overflow:hidden}
+.look-str i{display:block;width:15px;height:26px}
+.look-nome{flex:1;min-width:0;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.look-nome em{font-style:normal;color:var(--tenue);font-size:11.5px}
+.look-ok{flex:none;font-family:var(--mono);font-size:9.5px;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--tenue)}
+.look-fam{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--tenue);margin:14px 0 2px}
 .giorno{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 2px;border-bottom:1px solid var(--linea);text-align:left}
 .gg-d{font-size:14.5px;font-weight:500}
 .gg-m{font-family:var(--mono);font-size:10.5px;color:var(--tenue);margin-top:3px}
@@ -440,12 +453,154 @@ function temaScuro(){
   return h>=ORA_BUIO||h<ORA_LUCE;
 }
 var temaMesso=null;
+/* ---------- i look: la tavolozza scelta da lui ----------
+   Chiesto il 2026-09-22: "nell'app Spesa c'è un tasto Look per cambiare i
+   colori della palette, mettilo identico qua". Il meccanismo è quello di là —
+   un look è solo un pugno di colori scritti a mano nelle variabili del foglio
+   di stile, e tutta la pagina li usa già, quindi cambiano tutti insieme.
+   **Delle cento palette della Spesa qui ne stanno 89.** Le altre undici sono
+   state tolte a ragion veduta: il loro "rosso" è verdastro, e in quelle app
+   va benissimo perché lì il rosso è solo l'accento, mentre qui **rosso e
+   verde vogliono dire cose opposte** nel cerchio del grasso. Lo scarto l'ha
+   deciso un controllo, non l'occhio: tutte e 89 hanno il testo leggibile sul
+   fondo (contrasto 4,5 come minimo) e tengono distinti blu da senape — i due
+   anelli — e verde da rosso.
+   **Nomi diversi, stesso ruolo.** Le palette sono scritte sui nomi della
+   Spesa; qui la traduzione tiene il rapporto fra i colori, non la parola:
+   il nostro `--linea` (il bordo che si vede) prende il suo `linea-forte`, e
+   `--traccia` (il riempimento pallido) prende il suo `linea`.
+   **Un look spegne il tema scuro automatico**, e non c'è modo di evitarlo:
+   un colore scritto a mano sull'elemento vince su qualunque regola del foglio
+   di stile, provato. Manlio l'ha scelto sapendolo, il 2026-09-22. Ma senza
+   look scelto **l'app resta esattamente com'era**, sera compresa: il look si
+   toglie e tutto torna. Non buttare via il tema scuro per questo. */
+var LOOKS=[
+["c001","Stormy morning","monocromatici","F6FAFF,E6F2FE,384959,677079,BDC5CD,DBE1E8,2B4A7A,8A5A08,527191,1E7A4B,FFFFFF,677079"],
+["c002","Mossy hollow","monocromatici","F9FAF0,EFF2D7,3D4127,707262,C1C2B4,DFE0D4,2B4A7A,8A5A08,636B2F,1E7A4B,FFFFFF,707262"],
+["c003","Blue eclipse","monocromatici","0A092E,222155,A8A7C4,7E7E99,49486A,2D2C4F,9DBBEA,F0B429,7E7D9A,4ADE80,111111,7E7E99"],
+["c005","Green juice","monocromatici","1B2118,30382C,77CB4F,659350,40652E,2F4624,9DBBEA,F0B429,5E9544,4ADE80,111111,659350"],
+["c006","Chili spice","monocromatici","FFF3F0,FFDED7,380009,8C666A,C3AAAB,E3D1D0,2B4A7A,8A5A08,CD1B17,1D7548,FFFFFF,8C666A"],
+["c007","Chocolate truffle","monocromatici","FFFEF9,FEFDEF,38240D,7B7163,C3BDB2,E3DFD8,2B4A7A,8A5A08,B85400,1E7A4B,FFFFFF,7B7163"],
+["c008","Ink wash","monocromatici","FFFFFB,FFFFF4,4A4A4A,727270,C9C9C6,E6E6E2,2B4A7A,8A5A08,64778A,1E7A4B,FFFFFF,727270"],
+["c009","Golden taupe","monocromatici","FFFEF9,FEFDEF,6B4725,807060,D3C7B9,EAE4DB,2B4A7A,8A5A08,826E2D,1E7A4B,FFFFFF,807060"],
+["c010","Wisteria bloom","monocromatici","F9F9FF,EEEEFF,7C00B1,9458B0,D4AEE8,E8D6F4,2B4A7A,8A5A08,A1579E,1E7A4B,FFFFFF,9458B0"],
+["c011","Burnt sienna","monocromatici","FEFEFA,FBFBF2,7A3E22,876D5F,D6C4B9,ECE3DC,2B4A7A,8A5A08,C84930,1E7A4B,FFFFFF,876D5F"],
+["c056","Salt and pepper","neutri","FFFFFF,FFFFFF,2B2B2B,747474,BFBFBF,E1E1E1,2B4A7A,8A5A08,737373,1E7A4B,FFFFFF,747474"],
+["c058","Gothic noir","neutri","F9F8F8,EEEDED,000000,696868,AEAEAE,D6D5D5,2B4A7A,8A5A08,7A6B6B,1E7A4B,FFFFFF,696868"],
+["c060","Quiet luxury","neutri","FEFCF8,FCF6EB,534B44,76716D,CBC7C2,E6E3DF,2B4A7A,8A5A08,796F52,1E7A4B,FFFFFF,76716D"],
+["c061","Night sands","neutri","FEFCF4,FDF6E2,574A24,77715D,CCC7B6,E7E3D7,2B4A7A,8A5A08,7A7158,1E7A4B,FFFFFF,77715D"],
+["c062","Harbor haze","neutri","4A483E,5C5A4F,F2EFED,B8B7B3,8D8B84,6F6D64,C0D3F2,F5CC6D,9CBBDC,7DE7A4,111111,B8B7B3"],
+["c063","Old photograph","neutri","FFFEF9,FEFDEF,515031,757465,CBCABD,E7E6DD,2B4A7A,8A5A08,71705F,1E7A4B,FFFFFF,757465"],
+["c064","Cappuccino","neutri","F7F6F5,E9E7E4,422701,7D6F5B,C1B8AC,DED9D3,2B4A7A,8A5A08,806D52,1D7548,FFFFFF,7D6F5B"],
+["c065","Breakfast tea","neutri","FFF9F3,FFEEDF,351C08,7F6F62,C2B7AC,E3DAD2,2B4A7A,8A5A08,664C35,1E7A4B,FFFFFF,7F6F62"],
+["c066","Cozy campfire","neutri","420A06,671C18,D1B58C,A27F69,7B4E3C,613023,9DBBEA,F0B429,9D854B,4ADE80,111111,A27F69"],
+["c067","Stone path","neutri","FCFBFB,F6F5F3,4E4B45,73716E,C8C6C4,E4E2E2,2B4A7A,8A5A08,766F61,1E7A4B,FFFFFF,73716E"],
+["c068","Desert mirage","neutri","F7F5EF,EAE4D3,262756,6A6A7E,B8B7C1,DAD8DA,2B4A7A,8A5A08,BF462D,1C7045,FFFFFF,6A6A7E"],
+["c069","Honeycomb","neutri","FFFFF8,FFFEED,734422,84705E,D5C7B8,EBE5DA,2B4A7A,8A5A08,8F6F12,1E7A4B,FFFFFF,84705E"],
+["c070","Loft urbano","neutri","000000,141414,A7A5A6,7A7979,434242,252425,9DBBEA,F0B429,A7644E,4ADE80,FFFFFF,7A7979"],
+["c071","Spiced mocha","neutri","FEFEFA,FBFBF2,6D3B08,887158,D2C4B1,EAE3D8,2B4A7A,8A5A08,AA6526,1E7A4B,FFFFFF,887158"],
+["c072","Charming seaside","tranquilli","F7FFFD,EAFEFA,355458,667777,BDCCCC,DCE7E6,2B4A7A,8A5A08,5E7A7D,1E7A4B,FFFFFF,667777"],
+["c073","Calm blue","tranquilli","EFF9FF,D5EFFF,344D5D,64717A,B7C5CE,D5E1E8,2B4A7A,8A5A08,3876A3,1D7548,FFFFFF,64717A"],
+["c074","Beachfront views","tranquilli","FCFCF8,F8F6ED,544B23,76715E,CAC7B8,E4E3DA,2B4A7A,8A5A08,67728E,1E7A4B,FFFFFF,76715E"],
+["c075","Under the moonlight","tranquilli","F8F8FF,EBECFE,282866,6B6B8B,BABAD1,DBDBEA,2B4A7A,8A5A08,5D5C98,1E7A4B,FFFFFF,6B6B8B"],
+["c076","Lavender lullaby","tranquilli","F1FDFF,DAF9FF,55437C,736E88,C2C5D8,DBE3ED,2B4A7A,8A5A08,696A9D,1E7A4B,FFFFFF,736E88"],
+["c078","Retro calm","tranquilli","F9FAEE,EFF0D0,543F69,746C7A,C8C2C6,E2E0DB,2B4A7A,8A5A08,8B6453,1E7A4B,FFFFFF,746C7A"],
+["c079","Siltstone","tranquilli","FFFEF5,FFFBE4,5A4728,797060,CEC7B8,E8E4D8,2B4A7A,8A5A08,996A42,1E7A4B,FFFFFF,797060"],
+["c082","Peach skyline","tranquilli","F5FFFE,E5FFFB,3A5166,68757E,BDCBD0,DBE7E9,2B4A7A,8A5A08,617385,1E7A4B,FFFFFF,68757E"],
+["c084","Morning dew","tranquilli","F4FCF4,E0F7E2,474747,6D706D,C0C6C0,DCE3DC,2B4A7A,8A5A08,587373,1E7A4B,FFFFFF,6D706D"],
+["c085","Frozen lake","tranquilli","FFFEFE,FFFDFD,000080,6B6BB5,B2B2D8,DBDAEC,2B4A7A,8A5A08,617981,1E7A4B,FFFFFF,6B6BB5"],
+["c086","Olive grove","tranquilli","FDFDFD,FAF9F9,4B5124,727461,C8C9BC,E4E5DF,2B4A7A,8A5A08,767616,1E7A4B,FFFFFF,727461"],
+["c087","Coastal morning","tranquilli","FEFEFA,FBFBF2,34505B,687478,C1CACA,E2E6E4,2B4A7A,8A5A08,4D7486,1E7A4B,FFFFFF,687478"],
+["c088","Eucalyptus grove","tranquilli","FDFDFD,FAF9F9,395437,6A7669,C2CAC2,E2E5E1,2B4A7A,8A5A08,79755C,1E7A4B,FFFFFF,6A7669"],
+["c012","Blooming romance","romantici","420020,630E37,EC9BC3,B37493,863E61,672244,9DBBEA,F0B429,4D9618,4ADE80,111111,B37493"],
+["c013","Desert dusk","romantici","63265A,7D3572,F8DBD0,C4A1AE,9F6E89,844E74,ADC6ED,F1BA3A,CBA19C,4ADE80,111111,C4A1AE"],
+["c014","Lavender fields","romantici","FFFEF9,FEFDEF,6C3983,816A8A,D3C3D6,EAE2E8,2B4A7A,8A5A08,797644,1E7A4B,FFFFFF,816A8A"],
+["c015","Hydrangea","romantici","FFF7F5,FFE8E5,673475,7F6682,D1BCCF,EADCE3,2B4A7A,8A5A08,A35A67,1E7A4B,FFFFFF,7F6682"],
+["c016","Cactus flower","romantici","F0FBF5,D6F5E5,64424B,796D6F,C6C4C2,DCE1DD,2B4A7A,8A5A08,925D6A,1E7A4B,FFFFFF,796D6F"],
+["c017","Wildflowers","romantici","F3FAF3,DEF2DF,2D5530,617563,B8C8B8,D7E3D8,2B4A7A,8A5A08,836664,1E7A4B,FFFFFF,617563"],
+["c018","Country garden","romantici","FFFFFB,FFFFF4,723380,836889,D5C2D6,EBE2EA,2B4A7A,8A5A08,767731,1E7A4B,FFFFFF,836889"],
+["c019","Lotus garden","romantici","F4FCF4,E0F7E2,6B403C,7D6D68,CBC4BD,E1E2DA,2B4A7A,8A5A08,AD5A53,1E7A4B,FFFFFF,7D6D68"],
+["c020","Iris garden","romantici","44174C,61296B,B3CDB1,939095,706074,5C3F62,9DBBEA,F0B429,AB87B3,4ADE80,111111,939095"],
+["c021","Fresh peach","romantici","FFF9F3,FFEEDF,644436,7D6D65,D0C3BA,E9E0D9,2B4A7A,8A5A08,846A41,1E7A4B,FFFFFF,7D6D65"],
+["c022","Golden hour","romantici","FCFCF7,F8F8EA,534818,75705A,C9C6B4,E4E3D8,2B4A7A,8A5A08,8F6B00,1E7A4B,FFFFFF,75705A"],
+["c023","Spiced chai","romantici","FFFEF9,FEFDEF,634728,7D7061,D0C7BA,E9E4DC,2B4A7A,8A5A08,AA6526,1E7A4B,FFFFFF,7D7061"],
+["c024","Cherry blossom","romantici","FFFFFF,FFFFFF,5C4247,7A6E70,CEC6C8,E8E5E5,2B4A7A,8A5A08,7F6A6A,1E7A4B,FFFFFF,7A6E70"],
+["c025","Evening rose","romantici","303030,424242,E9C3C3,A79494,7A6B6B,595050,9DBBEA,F0B429,B788B1,4ADE80,111111,A79494"],
+["c026","Pastel garden","romantici","FDF5F5,F9E4E4,54463A,766D68,CAC0BD,E5DCDB,2B4A7A,8A5A08,AF5463,1D7548,FFFFFF,766D68"],
+["c027","Tuscan sunset","romantici","FFF9F3,FFEEDF,8A2B0D,966858,DCBBAE,EFDCD3,2B4A7A,8A5A08,B8503B,1E7A4B,FFFFFF,966858"],
+["c028","Zesty lemon","giocose","FFFFEA,FFFFC6,4F4E20,747459,CACAAD,E6E6CE,2B4A7A,8A5A08,796E30,1E7A4B,FFFFFF,747459"],
+["c029","California beaches","giocose","EAFDFF,C5FBFF,3C4952,657176,B6C7CB,D2E4E7,2B4A7A,8A5A08,3D7699,1E7A4B,FFFFFF,657176"],
+["c030","Freshly squeezed","giocose","FFFCE5,FFF6B7,7A3A00,876A49,D7C2A0,ECE1C5,2B4A7A,8A5A08,8F6B00,1E7A4B,FFFFFF,876A49"],
+["c032","Mango popsicle","giocose","FDFCE1,FAF6AE,743817,8B6E56,D4C1A4,EAE1C5,2B4A7A,8A5A08,886829,1E7A4B,FFFFFF,8B6E56"],
+["c033","Guava","giocose","FFF5EC,FFE3CC,7C3247,88646A,D8BABA,EDDAD5,2B4A7A,8A5A08,AD5A3D,1D7548,FFFFFF,88646A"],
+["c034","Glowing horizon","giocose","E5FCFF,B7F7FF,284498,5A6E94,ACC5E0,CBE2F1,2B4A7A,8A5A08,AD562E,1E7A4B,FFFFFF,5A6E94"],
+["c035","Sunny day","giocose","FFF6DB,FFE79E,2300F5,705BCE,BDACE3,E0D4DF,2B4A7A,8A5A08,006AD6,1D7548,FFFFFF,705BCE"],
+["c036","Retro sunset","giocose","FFF8DF,FFECA8,842F0A,93694F,DABC9F,EEDCC1,2B4A7A,8A5A08,BE5103,1E7A4B,FFFFFF,93694F"],
+["c037","Bubblegum pop","giocose","FFFFFF,FFFFFF,045959,537979,B4CDCD,DCE8E8,2B4A7A,8A5A08,AD527F,1E7A4B,FFFFFF,537979"],
+["c038","Cotton candy skies","giocose","F5FBFC,E4F4F7,4E4366,706D7D,C3C4CF,DEE1E7,2B4A7A,8A5A08,896777,1E7A4B,FFFFFF,706D7D"],
+["c039","Electric kiwi","giocose","FFFFDB,FFFF9E,000000,6B6B5C,B2B299,DBDBBC,2B4A7A,8A5A08,6B7A00,1E7A4B,FFFFFF,6B6B5C"],
+["c040","Watermelon splash","giocose","F4FCF4,E0F7E2,4A4A4A,6E716E,C1C7C1,DCE3DC,2B4A7A,8A5A08,477F1C,1E7A4B,FFFFFF,6E716E"],
+["c041","Alchemical reaction","vivaci","EAFFDB,C7FF9E,7200B7,905EAE,C6B2D0,D9DBD6,2B4A7A,8A5A08,A05C14,1E7A4B,FFFFFF,905EAE"],
+["c042","Electropop","vivaci","F8FFDB,ECFF9E,4B00EB,825EC9,C4B2E0,E0DBDD,2B4A7A,8A5A08,C25100,1E7A4B,FFFFFF,825EC9"],
+["c044","Neon jungle","vivaci","EEFDE3,D2FAB3,6C239B,826694,C7BCCD,DCDED9,2B4A7A,8A5A08,CB2D81,1E7A4B,FFFFFF,826694"],
+["c045","Sharp edge","vivaci","E6FFF6,BBFFE6,4D4D4D,6B7470,B8CAC3,D1E6DE,2B4A7A,8A5A08,CC3E3E,1E7A4B,FFFFFF,6B7470"],
+["c046","Electric fusion","vivaci","DBFFED,9EFFCF,7A3200,826D50,BEC2A6,CDE2CC,2B4A7A,8A5A08,996500,1D7548,FFFFFF,826D50"],
+["c047","Fireworks","vivaci","62010E,830C1C,F2BD90,C28574,9C4C42,822A2B,9DBBEA,F0B429,F46852,4ADE80,111111,C28574"],
+["c048","Space berries","vivaci","FFF5FA,FFE4F2,801946,98627B,D9B3C4,EDD6E1,2B4A7A,8A5A08,B54C20,1D7548,FFFFFF,98627B"],
+["c049","Pop art","vivaci","FFFFDB,FFFF9E,8F2D1A,986A56,DDC0A1,EFE2C0,2B4A7A,8A5A08,007D85,1E7A4B,FFFFFF,986A56"],
+["c050","Urban graffiti","vivaci","E1FFDC,AEFFA0,484848,677166,B3C8B0,CCE5C7,2B4A7A,8A5A08,007D85,1D7548,FFFFFF,677166"],
+["c051","Neon noir","vivaci","E1FFDC,AFFFA0,000000,5E6B5C,9EB29A,C2DBBD,2B4A7A,8A5A08,B700F5,1D7548,FFFFFF,5E6B5C"],
+["c052","Tropical punch","vivaci","FFFCEE,FEF6D0,035353,577B76,B3C9C0,DCE4D8,2B4A7A,8A5A08,AD582E,1E7A4B,FFFFFF,577B76"],
+["c053","Cobalt sky","vivaci","EEF7FB,D0EAF5,010080,6568B4,A7ADD6,CDD4EA,2B4A7A,8A5A08,1959B3,1D7548,FFFFFF,6568B4"],
+["c054","Technicolor dream","vivaci","F8FFDB,ECFF9E,191970,6D7090,B5BABB,D9DFCC,2B4A7A,8A5A08,CC00CC,1E7A4B,FFFFFF,6D7090"],
+["c055","Jewel box","vivaci","E9F8EE,C3EDD1,0D459C,506D90,A7C2D5,CADFE3,2B4A7A,8A5A08,7C6D23,1C7045,FFFFFF,506D90"],
+["c090","Autumn leaves","stagionali","FFF4E5,FFE2B8,61441A,7C6C54,D0BFA8,E9DBC9,2B4A7A,8A5A08,8C6326,1D7548,FFFFFF,7C6C54"],
+["c091","Winter chill","stagionali","F5FBFC,E4F4F7,0B2E33,607477,AFBEC0,D4DEE0,2B4A7A,8A5A08,4D787D,1E7A4B,FFFFFF,607477"],
+["c092","Spring energy","stagionali","FFFFE2,FFFEB0,005C18,517A53,B2CEA5,DBE8C6,2B4A7A,8A5A08,477E1C,1E7A4B,FFFFFF,517A53"],
+["c093","Pumpkin spice season","stagionali","20160E,3A2D22,DDA57C,9C7B63,6C4F3A,4A3526,9DBBEA,F0B429,A67753,4ADE80,111111,9C7B63"],
+["c094","Island oasis","stagionali","FFFDED,FFFACE,66460F,7E7052,D1C6AA,EAE3CE,2B4A7A,8A5A08,627A00,1E7A4B,FFFFFF,7E7052"],
+["c095","Autumn orchard","stagionali","420021,67103B,DEB03B,AC7E51,80462B,642727,9DBBEA,F0B429,AE79A7,4ADE80,111111,AC7E51"],
+["c096","Tropical rainforest","stagionali","E9F8EE,C3ECD1,324D2B,61715F,B2C5B4,CFE0D3,2B4A7A,8A5A08,517A26,1C7045,FFFFFF,61715F"],
+["c097","Wildflower meadow","stagionali","FEFEFC,FDFDF6,34505C,687479,C1CACC,E2E6E6,2B4A7A,8A5A08,408300,1E7A4B,FFFFFF,687479"],
+["c098","Harvest moon","stagionali","FFF8DF,FFECA8,800020,9F5C63,D9AEA6,EDD5C4,2B4A7A,8A5A08,BE5103,1E7A4B,FFFFFF,9F5C63"],
+["c100","Summer breeze","stagionali","FFFCE4,FFF7B5,6D3A35,886F65,D3C2B0,EBE1CC,2B4A7A,8A5A08,4E7889,1E7A4B,FFFFFF,886F65"]];
+var TINTE_LOOK=["carta","superficie","inchiostro","tenue","linea","traccia",
+                "blu","senape","rosso","verde","su-inchiostro","neutro"];
+function applicaLook(){
+  var r=document.documentElement, l=null, i;
+  for(i=0;i<LOOKS.length;i++) if(LOOKS[i][0]===S.look){ l=LOOKS[i]; break; }
+  var c=l?l[3].split(","):null;
+  TINTE_LOOK.forEach(function(n,k){
+    if(c) r.style.setProperty("--"+n,"#"+c[k]);
+    else r.style.removeProperty("--"+n);
+  });
+  CACHE_TINTE={};
+}
+/* Le due sfumature calcolate (il disco del grasso e le barre dello storico)
+   avevano le terne scritte dentro il codice: con un look addosso sarebbero
+   rimaste degli stessi colori mentre tutto il resto cambiava, e sono le due
+   cose che lui guarda di più. Ora leggono le variabili vere, quali che siano.
+   La cache serve perché una barra sola ne chiede tre e le barre sono venti:
+   si svuota quando cambia il tema o il look, gli unici momenti in cui quei
+   valori possono essere diversi. */
+var CACHE_TINTE={};
+function tinta(n){
+  if(!CACHE_TINTE[n]){
+    var t=getComputedStyle(document.documentElement).getPropertyValue("--"+n).trim();
+    var m=t.match(/^#?([0-9a-f]{6})$/i), r=[0,0,0];
+    if(m) r=[parseInt(m[1].slice(0,2),16),parseInt(m[1].slice(2,4),16),parseInt(m[1].slice(4,6),16)];
+    else { m=t.match(/(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/); if(m) r=[+m[1],+m[2],+m[3]]; }
+    CACHE_TINTE[n]=r;
+  }
+  return CACHE_TINTE[n];
+}
 function applicaTema(){
   var scuro=temaScuro();
   document.documentElement.setAttribute("data-tema",scuro?"scuro":"chiaro");
   var m=document.querySelector('meta[name="theme-color"]');
   if(m) m.setAttribute("content",scuro?"#121614":"#141B18");
   var cambiato=temaMesso!==null&&temaMesso!==scuro;
+  if(cambiato) CACHE_TINTE={};
   temaMesso=scuro;
   return cambiato;
 }
@@ -480,7 +635,7 @@ var S={
   mese:null, apertoDove:"lista", finestra:null,
   drive:{on:false,id:null,ultimo:null,rev:null}, driveStato:"",
   passi:0, apertoPassi:0, daContapassi:null, pal:{},
-  cerchio:false, scrivo:null, grezzo:null, primaEra:null, ultimoFile:null,
+  cerchio:false, scrivo:null, grezzo:null, primaEra:null, ultimoFile:null, look:"", lookAperto:false,
   scelto:null, grammi:100, pasto:pastoDaOra(), modo:"cerca", cerca:"",
   man:{nome:"",kcal:"",p:"",c:"",g:""}, ric:[], ricNome:"",
   aperto:null, apertoVoci:[], export:"", importa:"", msg:null, spia:"", focus:null
@@ -494,6 +649,7 @@ function avvia(){
            if(cfg.tema==="chiaro"||cfg.tema==="scuro"||cfg.tema==="auto") S.tema=cfg.tema;
            S.cerchio=!!cfg.cerchio;
            S.ultimoFile=Number(cfg.ultimoFile)||null;
+           S.look=typeof cfg.look==="string"?cfg.look:"";
            if(!(Number(cfg.fabV)>=FAB_V)){
              if(S.ob.fab===FAB_VECCHIO) S.ob.fab=FAB_NUOVO;
              salvaCfg();
@@ -520,6 +676,7 @@ function avvia(){
     S.msg=fv===0?"Non hai mai scaricato il file di backup."
                 :"Non scarichi il file di backup da "+fv+" giorni.";
     S.msgAz={az:"scarica",testo:"Scarica"}; } }
+  applicaLook();
   chiediMemoriaStabile();
   render();
   aggiornaCerchio();
@@ -726,7 +883,7 @@ function chiediMemoriaStabile(){
   }).catch(function(){});
 }
 function salvaCfg(){
-  var c={ob:S.ob,miei:S.miei,recenti:S.recenti,tema:S.tema,fabV:FAB_V,drive:S.drive,cerchio:S.cerchio,ultimoFile:S.ultimoFile};
+  var c={ob:S.ob,miei:S.miei,recenti:S.recenti,tema:S.tema,fabV:FAB_V,drive:S.drive,cerchio:S.cerchio,ultimoFile:S.ultimoFile,look:S.look};
   scrivi(K_CFG,c); scrivi(K_CFG2,c);
 }
 
@@ -1116,9 +1273,7 @@ function grammiScritti(gr){
 function grammiTarget(){ return Math.max(1,(S.ob.fab-S.ob.kcal)/KCAL_PER_KG*1000); }
 function lerp(a,b,t){ return Math.round(a+(b-a)*t); }
 function coloreGrassi(gr){
-  var scuro=temaScuro();
-  var A=scuro?[217,164,65]:[192,132,17];
-  var V=scuro?[78,154,114]:[46,107,79];
+  var A=tinta("senape"), V=tinta("verde");
   /* Dal 2026-09-14 il verde non si perde più andando oltre l'obiettivo:
      più grasso hai tolto, più resta verde. Prima da lì in poi virava al
      rosso, e le sue giornate migliori venivano rosse come quelle storte.
@@ -1145,10 +1300,7 @@ function coloreGrassi(gr){
    Se un giorno mette un fabbisogno più basso dell'obiettivo, la sfumatura non
    avrebbe dove stare: lì la barra è verde sotto l'obiettivo e rossa sopra. */
 function coloreBarra(kcal){
-  var scuro=temaScuro();
-  var V=scuro?[78,154,114]:[46,107,79];
-  var A=scuro?[217,164,65]:[192,132,17];
-  var R=scuro?[201,105,75]:[163,52,31];
+  var V=tinta("verde"), A=tinta("senape"), R=tinta("rosso");
   var a=S.ob.kcal, b=S.ob.fab;
   var u=b>a?Math.max(0,Math.min(1,(kcal-a)/(b-a))):(kcal>a?1:0);
   var c=u<=0.5?[lerp(V[0],A[0],u*2),lerp(V[1],A[1],u*2),lerp(V[2],A[2],u*2)]
@@ -1845,6 +1997,42 @@ function pannelloBruciate(){
      num(media)+' kcal in media in quei giorni. Sono stime, e non entrano nel deficit.</div></section>';
   return h;
 }
+/* Le palette si scelgono **a occhio**: la striscia dei colori conta più del
+   nome, che è in inglese e non dice niente. Perciò la riga porta le sue sei
+   tinte in vista, grandi abbastanza da vedersi, e il nome sta in piccolo.
+   Sono 89: si aprono solo quando lui le chiede, se no il pannello delle
+   Impostazioni diventa un muro lungo due schermate. */
+function rigaLook(l){
+  var c=l[3].split(","), scelta=(S.look===l[0]);
+  var mostra=[2,6,7,9,8,0];   /* inchiostro, blu, senape, verde, rosso, carta */
+  var h='<button class="look-riga'+(scelta?" on":"")+'" data-az="look" data-l="'+l[0]+'"><span class="look-str">';
+  mostra.forEach(function(k){ h+='<i style="background:#'+c[k]+'"></i>'; });
+  h+='</span><span class="look-nome">'+esc(l[1])+'</span>'+(scelta?'<span class="look-ok">in uso</span>':'')+'</button>';
+  return h;
+}
+function pannelloLook(){
+  var h='<section class="pannello"><div class="etichetta">Look</div>'+
+    '<div class="nota">Cambia i colori di tutta l\'app. Le tinte tengono il loro significato: '+
+    'il blu resta le calorie, la senape le proteine, il verde e il rosso il grasso. '+
+    '<strong>Scegli guardando la striscia</strong>, non il nome.</div>';
+  if(!S.lookAperto){
+    h+='<button class="b2" data-az="look-apri">'+(S.look?"Cambia look":"Scegli un look")+'</button>';
+    if(S.look) h+='<button class="b2" data-az="look-via">Togli il look, torna ai colori di sempre</button>';
+    return h+'</section>';
+  }
+  h+='<button class="b2" data-az="look-chiudi">Chiudi l\'elenco</button>'+
+     '<button class="look-riga'+(S.look?"":" on")+'" data-az="look" data-l=""><span class="look-str">'+
+     '<i style="background:#141B18"></i><i style="background:#1F4A6B"></i><i style="background:#C08411"></i>'+
+     '<i style="background:#2E6B4F"></i><i style="background:#A3341F"></i><i style="background:#E9ECE6"></i>'+
+     '</span><span class="look-nome">I colori di sempre <em>(con il buio automatico la sera)</em></span>'+
+     (S.look?'':'<span class="look-ok">in uso</span>')+'</button>';
+  var fam="";
+  LOOKS.forEach(function(l){
+    if(l[2]!==fam){ fam=l[2]; h+='<div class="look-fam">'+esc(fam)+'</div>'; }
+    h+=rigaLook(l);
+  });
+  return h+'</section>';
+}
 function vistaImpostazioni(){
   var h='<section class="pannello"><div class="etichetta">Obiettivi giornalieri</div><div class="griglia">';
   [["kcal","Obiettivo kcal"],["fab","Fabbisogno kcal"],["p","Proteine (g)"],["c","Carboidrati (g)"],["g","Grassi (g)"],["peso","Il tuo peso (kg)"]].forEach(function(x){
@@ -1868,7 +2056,11 @@ function vistaImpostazioni(){
   });
   h+='</div><div class="nota">Con <strong>Automatico</strong> lo schermo si scurisce da solo dalle '+
      ORA_BUIO+' di sera alle '+ORA_LUCE+' del mattino, e torna chiaro da sé. I colori che contano '+
-     '\u2014 blu le calorie, senape le proteine, verde e rosso il grasso — restano quelli anche al buio.</div></section>';
+     '\u2014 blu le calorie, senape le proteine, verde e rosso il grasso — restano quelli anche al buio.'+
+     (S.look?' <strong>Con un look scelto questo non vale pi\u00f9</strong>: i colori restano quelli del look, giorno e notte.':'')+
+     '</div></section>';
+
+  h+=pannelloLook();
 
   h+='<section class="pannello"><div class="etichetta">Cerchio nella barra in alto</div>';
   if(!cerchioSiPuo()){
@@ -1959,6 +2151,10 @@ document.getElementById("app").addEventListener("click",function(ev){
   if(az==="vista"){ S.vista=v; S.scelto=null; S.focus=null; S.aperto=null; S.finestra=null; S.scrivo=null; if(v==="aggiungi"){S.pasto=pastoDaOra();} render(); }
   else if(az==="chiudi-msg"){ S.msg=null; S.msgAz=null; render(); }
   else if(az==="in-pari"){ S.msgAz=null; driveInPari(); }
+  else if(az==="look-apri"){ S.lookAperto=true; render(); }
+  else if(az==="look-chiudi"){ S.lookAperto=false; render(); }
+  else if(az==="look-via"){ S.look=""; salvaCfg(); applicaLook(); applicaTema(); render(); aggiornaCerchio(); }
+  else if(az==="look"){ S.look=b.getAttribute("data-l")||""; salvaCfg(); applicaLook(); applicaTema(); render(); aggiornaCerchio(); }
   else if(az==="togli"){
     var id=b.getAttribute("data-id"), gio=b.getAttribute("data-g")||S.data;
     var fuori=function(x){ return x.id!==id; };
